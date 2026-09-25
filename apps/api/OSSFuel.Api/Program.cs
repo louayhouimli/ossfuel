@@ -29,11 +29,19 @@ app.MapGet("/hello", () => "Hello World!");
 
 app.MapGet("/health/db", async (OSSFuelDbContext db) =>
 {
-    var connected = await db.Database.CanConnectAsync();
+    try
+    {
+        await db.Database.OpenConnectionAsync();
+        await db.Database.CloseConnectionAsync();
 
-    return connected
-        ? Results.Ok("Database connected")
-        : Results.StatusCode(503);
+        return Results.Ok("Database connected");
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(
+            title: "Database connection failed",
+            detail: ex.ToString());
+    }
 });
 
 
