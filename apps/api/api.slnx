@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="OSSFuel.Api/OSSFuel.Api.csproj"/>
+  <Project Path="OSSFuel.UnitTests/OSSFuel.UnitTests.csproj"/>
+  <Project Path="OSSFuel.IntegrationTests/OSSFuel.IntegrationTests.csproj"/>
+</Solution>

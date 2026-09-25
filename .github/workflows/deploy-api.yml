@@ -1,0 +1,76 @@
+name: Deploy OSSFuel API
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/api/**"
+      - ".github/workflows/deploy-api.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  IMAGE_NAME: louayhouimli/ossfuel-api
+
+jobs:
+  build-test-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore apps/api/api.slnx
+
+      - name: Build
+        run: dotnet build apps/api/api.slnx --configuration Release --no-restore
+
+      - name: Unit tests
+        run: dotnet test apps/api/OSSFuel.UnitTests/OSSFuel.UnitTests.csproj --configuration Release --no-build
+
+      - name: Integration tests
+        run: dotnet test apps/api/OSSFuel.IntegrationTests/OSSFuel.IntegrationTests.csproj --configuration Release --no-build
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/api/OSSFuel.Api
+          file: ./apps/api/OSSFuel.Api/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ghcr.io/${{ env.IMAGE_NAME }}:latest
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Container Apps
+        shell: bash
+        run: |
+          az containerapp update \
+            --name "${{ vars.ACA_CONTAINER_APP_NAME }}" \
+            --resource-group "${{ vars.ACA_RESOURCE_GROUP }}" \
+            --image "ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
