@@ -22,20 +22,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           content: "width=device-width, initial-scale=1",
         },
         {
-          // scaffold:title
-          title: "OSSFuel",
+          title: "OSSFuel | Fund the open source you depend on",
         },
         {
           name: "description",
-          // scaffold:description
-          content: "Finances made clear.",
+          content:
+            "A funding, gateway, and accounting layer for open-source projects.",
         },
       ],
       links: [
-        // Replace with your icons here, or remove if you have a favicon.ico in public/
         {
           rel: "icon",
-          href: "https://mugnavo.com/favicon.ico",
+          type: "image/svg+xml",
+          href: "/favicon.svg",
         },
       ],
     }),

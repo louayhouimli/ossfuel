@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="OSSFuel">
+  <title>OSSFuel</title>
+  <style>
+    .mark { fill: #0A0A0B; }
+    @media (prefers-color-scheme: dark) {
+      .mark { fill: #F2F1EF; }
+    }
+  </style>
+  <path class="mark" fill-rule="evenodd" clip-rule="evenodd" d="M53.06 23.44L58 32L45 54.52L19 54.52L6 32L19 9.48L45 9.48L48.25 15.11L42.48 21.11L40.38 17.48L23.62 17.48L15.24 32L23.62 46.52L40.38 46.52L48.76 32L45.58 26.48ZM47.85 17.56L30.03 29.11L33.97 34.89L51.23 22.52ZM25 32A7 7 0 0 1 39 32A7 7 0 0 1 25 32Z"/>
+</svg>
