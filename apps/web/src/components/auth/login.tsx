@@ -7,8 +7,14 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card"
 import { Logo } from "@/components/brand/logo"
+import { API_URL } from "@/lib/api"
 
 const LoginForm = () => {
+  const handleSignIn = () => {
+    const returnUrl = encodeURIComponent("/dashboard")
+    window.location.href = `${API_URL}/login?returnUrl=${returnUrl}`
+  }
+
   return (
     <section className="relative flex min-h-screen items-center justify-center">
       <div className="mx-auto w-full max-w-lg px-4 py-10 sm:px-0 md:py-20">
@@ -28,6 +34,7 @@ const LoginForm = () => {
             <Button
               type="button"
               variant="outline"
+              onClick={handleSignIn}
               className="text-medium h-10 w-full cursor-pointer gap-2 rounded-lg text-sm text-card-foreground shadow-xs dark:bg-background"
             >
               <img

@@ -8,10 +8,7 @@ import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools"
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
     // Typically we don't need the user immediately in landing pages.
-    // For protected routes, see /_auth/route.tsx
-    // beforeLoad: ({ context }) => {
-    //   void context.queryClient.query(authQueryOptions()).catch(noop);
-    // },
+    // For protected routes, see /_authenticated/route.tsx
     head: () => ({
       meta: [
         {
