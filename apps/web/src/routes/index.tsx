@@ -1,14 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Logo } from "@/components/brand/logo"
+import { LandingPage } from "@/components/landing-page"
 
 export const Route = createFileRoute("/")({
-  component: RouteComponent,
+  component: LandingPage,
 })
-
-function RouteComponent() {
-  return (
-    <div className="flex min-h-svh items-center justify-center p-6">
-      <Logo size={96} showWordmark={false} />
-    </div>
-  )
-}
