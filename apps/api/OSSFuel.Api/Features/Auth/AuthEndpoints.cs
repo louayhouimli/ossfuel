@@ -18,13 +18,11 @@ public static class AuthEndpoints
                 },
                 [GitHubAuthenticationDefaults.AuthenticationScheme]));
 
-        app.MapPost("/logout", (IConfiguration configuration) =>
-            Results.SignOut(
-                new AuthenticationProperties
-                {
-                    RedirectUri = configuration["WebAppUrl"] ?? "/"
-                },
-                [CookieAuthenticationDefaults.AuthenticationScheme]));
+        app.MapPost("/logout", async (HttpContext httpContext) =>
+        {
+            await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Results.NoContent();
+        });
 
         app.MapGet("/validate", async (ClaimsPrincipal principal, OSSFuelDbContext db, CancellationToken cancellationToken) =>
         {

@@ -1,7 +1,11 @@
 import { useState } from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import { Check, Menu, Moon, Sun, X } from "lucide-react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { Button } from "@workspace/ui/components/button"
 import { Logo } from "@/components/brand/logo"
+import { apiFetch } from "@/lib/api"
+import { authQueryOptions } from "@/lib/auth"
 import { useTheme } from "@/components/theme-provider"
 
 const flowSteps = [
@@ -13,8 +17,95 @@ const flowSteps = [
 
 export function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const { theme, setTheme } = useTheme()
+  const { data: user, isLoading: isAuthLoading } = useQuery(authQueryOptions())
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark")
+
+  const handleLogout = async () => {
+    setIsSigningOut(true)
+
+    try {
+      await apiFetch("/logout", { method: "POST" })
+      queryClient.setQueryData(["auth", "user"], null)
+      await queryClient.invalidateQueries({ queryKey: ["auth", "user"] })
+      setMenuOpen(false)
+      await navigate({ to: "/" })
+    } finally {
+      setIsSigningOut(false)
+    }
+  }
+
+  const authNavigation = user ? (
+    <div className="flex items-center gap-2">
+      <Link
+        to="/dashboard"
+        aria-label="Open dashboard"
+        className="inline-flex min-h-11 items-center gap-2 rounded-sm px-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      >
+        {user.avatarUrl ? (
+          <img
+            src={user.avatarUrl}
+            alt={`${user.login} GitHub avatar`}
+            className="h-8 w-8 rounded-full border border-foreground/20"
+          />
+        ) : (
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-foreground/20 text-xs font-bold">
+            {user.login.slice(0, 1).toUpperCase()}
+          </span>
+        )}
+        <span className="hidden max-w-28 truncate sm:inline">{user.login}</span>
+      </Link>
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={handleLogout}
+        disabled={isSigningOut}
+        className="min-h-11 rounded-sm px-3 text-sm font-semibold"
+      >
+        {isSigningOut ? "Signing out" : "Sign out"}
+      </Button>
+    </div>
+  ) : isAuthLoading ? (
+    <span
+      className="min-h-11 px-4 py-3 text-sm text-muted-foreground"
+      aria-live="polite"
+    >
+      Checking session
+    </span>
+  ) : (
+    <Link
+      to="/login"
+      className="min-h-11 rounded-sm bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
+      Sign in with GitHub
+    </Link>
+  )
+
+  const authCta = user ? (
+    <Link
+      to="/dashboard"
+      className="min-h-12 rounded-sm bg-primary px-6 py-3 text-center font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
+      Open dashboard
+    </Link>
+  ) : isAuthLoading ? (
+    <span
+      className="min-h-12 px-6 py-3 text-center text-sm text-muted-foreground"
+      aria-live="polite"
+    >
+      Checking session
+    </span>
+  ) : (
+    <Link
+      to="/login"
+      className="min-h-12 rounded-sm bg-primary px-6 py-3 text-center font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    >
+      Sign in with GitHub
+    </Link>
+  )
 
   return (
     <div className="min-h-svh overflow-x-hidden bg-background text-foreground">
@@ -65,12 +156,7 @@ export function LandingPage() {
               {theme === "dark" ? "White mode" : "Dark mode"}
             </button>
 
-            <Link
-              to="/login"
-              className="min-h-11 rounded-sm bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              Sign in with GitHub
-            </Link>
+            {authNavigation}
           </div>
           <button
             type="button"
@@ -122,12 +208,7 @@ export function LandingPage() {
                   ? "Switch to white mode"
                   : "Switch to dark mode"}
               </button>
-              <Link
-                to="/login"
-                className="mt-2 min-h-11 rounded-sm bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                Sign in with GitHub
-              </Link>
+              <div className="mt-2">{authNavigation}</div>
             </div>
           </nav>
         ) : null}
@@ -154,12 +235,7 @@ export function LandingPage() {
               >
                 Follow the funding flow
               </a>
-              <Link
-                to="/login"
-                className="min-h-12 rounded-sm border border-foreground/30 px-6 py-3 text-center font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                Sign in with GitHub
-              </Link>
+              {authCta}
             </div>
           </div>
 
@@ -362,12 +438,7 @@ export function LandingPage() {
                 access, and usage records.
               </p>
             </div>
-            <Link
-              to="/login"
-              className="min-h-12 rounded-sm bg-primary px-6 py-3 text-center font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              Sign in with GitHub
-            </Link>
+            {authCta}
           </div>
         </section>
       </main>
