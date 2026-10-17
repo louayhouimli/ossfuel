@@ -75,12 +75,7 @@ export function AuthShell() {
                 Continue with GitHub
               </Button>
             </div>
-
           </div>
-
-          <p className="text-center text-xs text-muted-foreground lg:text-right">
-            OSSFuel is in early development.
-          </p>
         </section>
       </div>
     </main>

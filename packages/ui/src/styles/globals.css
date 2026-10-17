@@ -167,6 +167,30 @@
   --sidebar-ring: oklch(0.9584 0.0029 84.56);
 }
 
+/*
+  The hero watermark. Each edge of the mark is drawn in flow order, and each
+  stroke draws brighter than it settles so the mark reads as current running a
+  route instead of a logo fading in. The draw finishes and holds, so the hero
+  copy stays the loudest thing on the screen.
+*/
+@keyframes logoTrace {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes logoTraceHead {
+  from {
+    stroke-opacity: 6;
+  }
+  to {
+    stroke-opacity: 1;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

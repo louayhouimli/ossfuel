@@ -1,12 +1,11 @@
-import { useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
-import { Check, Menu, Moon, Sun, X } from "lucide-react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Button } from "@workspace/ui/components/button"
-import { Logo } from "@/components/brand/logo"
-import { apiFetch } from "@/lib/api"
+import { Link } from "@tanstack/react-router"
+import { useQuery } from "@tanstack/react-query"
+import { Check } from "lucide-react"
+import { LogoTrace } from "@/components/brand/logo-trace"
+import { Loader } from "@/components/loader"
 import { authQueryOptions } from "@/lib/auth"
-import { useTheme } from "@/components/theme-provider"
+import { buttonPrimary, eyebrowItem, eyebrowSection, panel } from "@/lib/styles"
+import { cn } from "@workspace/ui/lib/utils"
 
 const flowSteps = [
   ["01", "Sponsor", "Choose an open-source project to support."],
@@ -16,210 +15,30 @@ const flowSteps = [
 ] as const
 
 export function LandingPage() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [isSigningOut, setIsSigningOut] = useState(false)
-  const { theme, setTheme } = useTheme()
   const { data: user, isLoading: isAuthLoading } = useQuery(authQueryOptions())
-  const queryClient = useQueryClient()
-  const navigate = useNavigate()
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark")
-
-  const handleLogout = async () => {
-    setIsSigningOut(true)
-
-    try {
-      await apiFetch("/logout", { method: "POST" })
-      queryClient.setQueryData(["auth", "user"], null)
-      await queryClient.invalidateQueries({ queryKey: ["auth", "user"] })
-      setMenuOpen(false)
-      await navigate({ to: "/" })
-    } finally {
-      setIsSigningOut(false)
-    }
-  }
-
-  const authNavigation = user ? (
-    <div className="flex items-center gap-2">
-      <Link
-        to="/dashboard"
-        aria-label="Open dashboard"
-        className="inline-flex min-h-11 items-center gap-2 rounded-sm px-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-      >
-        {user.avatarUrl ? (
-          <img
-            src={user.avatarUrl}
-            alt={`${user.login} GitHub avatar`}
-            className="h-8 w-8 rounded-full border border-foreground/20"
-          />
-        ) : (
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-foreground/20 text-xs font-bold">
-            {user.login.slice(0, 1).toUpperCase()}
-          </span>
-        )}
-        <span className="hidden max-w-28 truncate sm:inline">{user.login}</span>
-      </Link>
-      <Button
-        type="button"
-        variant="ghost"
-        onClick={handleLogout}
-        disabled={isSigningOut}
-        className="min-h-11 rounded-sm px-3 text-sm font-semibold"
-      >
-        {isSigningOut ? "Signing out" : "Sign out"}
-      </Button>
-    </div>
-  ) : isAuthLoading ? (
-    <span
-      className="min-h-11 px-4 py-3 text-sm text-muted-foreground"
-      aria-live="polite"
-    >
-      Checking session
-    </span>
-  ) : (
-    <Link
-      to="/login"
-      className="min-h-11 rounded-sm bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-    >
-      Sign in with GitHub
-    </Link>
-  )
 
   const authCta = user ? (
-    <Link
-      to="/dashboard"
-      className="min-h-12 rounded-sm bg-primary px-6 py-3 text-center font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-    >
+    <Link to="/dashboard" className={cn(buttonPrimary, "justify-center")}>
       Open dashboard
     </Link>
   ) : isAuthLoading ? (
-    <span
-      className="min-h-12 px-6 py-3 text-center text-sm text-muted-foreground"
-      aria-live="polite"
-    >
-      Checking session
-    </span>
+    <Loader
+      label="Checking session"
+      size={16}
+      className="min-h-12 justify-center px-6"
+    />
   ) : (
-    <Link
-      to="/login"
-      className="min-h-12 rounded-sm bg-primary px-6 py-3 text-center font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-    >
+    <Link to="/sign-in" className={cn(buttonPrimary, "justify-center")}>
       Sign in with GitHub
     </Link>
   )
 
   return (
-    <div className="min-h-svh overflow-x-hidden bg-background text-foreground">
-      <header className="border-b border-foreground/15">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-          <Link
-            to="/"
-            aria-label="OSSFuel home"
-            className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-          >
-            <Logo size={30} />
-          </Link>
-          <nav
-            className="hidden items-center gap-8 text-sm font-medium md:flex"
-            aria-label="Primary navigation"
-          >
-            <a
-              href="#why"
-              className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-            >
-              Why OSSFuel
-            </a>
-            <a
-              href="#flow"
-              className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-            >
-              The flow
-            </a>
-            <a
-              href="#record"
-              className="focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-            >
-              The record
-            </a>
-          </nav>
-          <div className="hidden items-center gap-2 md:flex">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-foreground/20 px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-            >
-              {theme === "dark" ? (
-                <Sun size={16} aria-hidden="true" />
-              ) : (
-                <Moon size={16} aria-hidden="true" />
-              )}
-              {theme === "dark" ? "White mode" : "Dark mode"}
-            </button>
-
-            {authNavigation}
-          </div>
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-foreground/25 px-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:hidden"
-            aria-expanded={menuOpen}
-            aria-controls="mobile-menu"
-            onClick={() => setMenuOpen((open) => !open)}
-          >
-            {menuOpen ? (
-              <X size={16} aria-hidden="true" />
-            ) : (
-              <Menu size={16} aria-hidden="true" />
-            )}
-            {menuOpen ? "Close" : "Menu"}
-          </button>
-        </div>
-        {menuOpen ? (
-          <nav
-            id="mobile-menu"
-            className="border-t border-foreground/15 px-5 py-4 md:hidden"
-            aria-label="Mobile navigation"
-          >
-            <div className="mx-auto flex max-w-6xl flex-col gap-1">
-              {[
-                ["Why OSSFuel", "#why"],
-                ["The flow", "#flow"],
-                ["The record", "#record"],
-              ].map(([label, href]) => (
-                <a
-                  key={href}
-                  href={href}
-                  onClick={() => setMenuOpen(false)}
-                  className="min-h-11 rounded-sm px-2 py-3 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                >
-                  {label}
-                </a>
-              ))}
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-sm border border-foreground/20 px-4 py-3 text-left text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                {theme === "dark" ? (
-                  <Sun size={16} aria-hidden="true" />
-                ) : (
-                  <Moon size={16} aria-hidden="true" />
-                )}
-                {theme === "dark"
-                  ? "Switch to white mode"
-                  : "Switch to dark mode"}
-              </button>
-              <div className="mt-2">{authNavigation}</div>
-            </div>
-          </nav>
-        ) : null}
-      </header>
-
-      <main>
-        <section className="mx-auto grid min-h-[calc(100svh-76px)] max-w-6xl items-center gap-12 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20">
+    <main>
+      <section className="relative isolate overflow-hidden">
+        <LogoTrace className="pointer-events-none absolute top-1/2 left-[38%] -z-10 h-auto w-[105%] -translate-y-1/2" />
+        <div className="mx-auto grid min-h-[calc(100svh-76px)] max-w-6xl items-center gap-12 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20">
           <div className="max-w-xl">
-            <p className="mb-5 text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-              Funding for open-source AI work
-            </p>
             <h1 className="font-sans text-[clamp(3rem,7vw,6.5rem)] leading-[0.91] font-bold tracking-[-0.065em]">
               Fund the work. See where it goes.
             </h1>
@@ -229,10 +48,7 @@ export function LandingPage() {
               visible usage records.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a
-                href="#flow"
-                className="min-h-12 rounded-sm bg-primary px-6 py-3 text-center font-semibold text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
+              <a href="#flow" className={cn(buttonPrimary, "justify-center")}>
                 Follow the funding flow
               </a>
               {authCta}
@@ -267,10 +83,7 @@ export function LandingPage() {
                   "Provider, model, cost, and usage stay visible.",
                 ],
               ].map(([title, status, description], index) => (
-                <div
-                  key={title}
-                  className="relative border border-foreground/20 bg-secondary p-5 sm:p-6"
-                >
+                <div key={title} className={cn(panel, "relative")}>
                   <span
                     className="absolute top-6 -left-[2.05rem] flex h-4 w-4 items-center justify-center rounded-full border-2 border-background bg-foreground sm:-left-[2.55rem]"
                     aria-hidden="true"
@@ -279,9 +92,7 @@ export function LandingPage() {
                   </span>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-                        0{index + 1}
-                      </p>
+                      <p className={eyebrowItem}>0{index + 1}</p>
                       <h2 className="mt-2 font-sans text-xl font-bold tracking-[-0.04em]">
                         {title}
                       </h2>
@@ -298,157 +109,133 @@ export function LandingPage() {
               ))}
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section
-          id="why"
-          className="border-y border-foreground/15 bg-secondary"
-        >
-          <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.75fr_1.25fr] lg:gap-24">
-            <div>
-              <p className="text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-                Why OSSFuel
-              </p>
-              <h2 className="mt-5 max-w-md font-sans text-4xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
-                AI tools should not become a private expense for maintainers.
-              </h2>
-            </div>
-            <div className="grid gap-8 sm:grid-cols-2">
-              <div className="border-t border-foreground/20 pt-5">
-                <h3 className="font-semibold">
-                  Fund a project, not a black box
-                </h3>
-                <p className="mt-3 leading-7 text-muted-foreground">
-                  Sponsors support a specific open-source project instead of
-                  sending money into an account with no usage context.
-                </p>
-              </div>
-              <div className="border-t border-foreground/20 pt-5">
-                <h3 className="font-semibold">Keep usage accountable</h3>
-                <p className="mt-3 leading-7 text-muted-foreground">
-                  OSSFuel records the project, model, provider, usage, cost, and
-                  balance deduction for each successful request.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section
-          id="flow"
-          className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28"
-        >
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-              The flow
-            </p>
-            <h2 className="mt-5 font-sans text-5xl leading-[0.98] font-bold tracking-[-0.05em] sm:text-6xl">
-              Follow a contribution from funding to usage.
+      <section id="why" className="border-y border-foreground/15 bg-secondary">
+        <div className="mx-auto grid max-w-6xl gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.75fr_1.25fr] lg:gap-24">
+          <div>
+            <p className={eyebrowSection}>Why OSSFuel</p>
+            <h2 className="mt-5 max-w-md font-sans text-4xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
+              AI tools should not become a private expense for maintainers.
             </h2>
           </div>
-          <div className="mt-14 border-l border-foreground/25 pl-5 sm:pl-8">
-            {flowSteps.map(([step, title, description]) => (
-              <article
-                key={step}
-                className="relative border-b border-foreground/15 py-6 first:pt-0 last:border-b-0"
-              >
-                <span
-                  className="absolute top-7 -left-[1.8rem] h-2.5 w-2.5 rounded-full bg-foreground sm:-left-[2.3rem]"
-                  aria-hidden="true"
-                />
-                <p className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-                  {step}
-                </p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-[10rem_1fr] sm:gap-8">
-                  <h3 className="text-lg font-semibold">{title}</h3>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    {description}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section
-          id="record"
-          className="border-t border-foreground/15 bg-secondary"
-        >
-          <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.8fr_1.2fr] lg:items-start lg:gap-24">
-            <div>
-              <p className="text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-                The record
-              </p>
-              <h2 className="mt-5 font-sans text-4xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
-                The balance stays tied to the work.
-              </h2>
-              <p className="mt-5 max-w-md leading-7 text-muted-foreground">
-                Each successful request creates a record that explains what
-                happened to the project balance.
+          <div className="grid gap-8 sm:grid-cols-2">
+            <div className="border-t border-foreground/20 pt-5">
+              <h3 className="font-semibold">Fund a project, not a black box</h3>
+              <p className="mt-3 leading-7 text-muted-foreground">
+                Sponsors support a specific open-source project instead of
+                sending money into an account with no usage context.
               </p>
             </div>
-            <div className="border border-foreground/20 bg-background p-5 sm:p-8">
-              <div className="flex items-center justify-between border-b border-foreground/15 pb-5">
-                <div>
-                  <p className="text-xs font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-                    Usage record
-                  </p>
-                  <p className="mt-2 font-sans text-2xl font-bold tracking-[-0.04em]">
-                    Project request
-                  </p>
-                </div>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-                  <Check size={14} aria-hidden="true" />
-                  Successful
-                </span>
-              </div>
-              <dl className="divide-y divide-foreground/15">
-                {[
-                  ["Project", "Open-source project"],
-                  ["Request", "AI Gateway request"],
-                  ["Provider", "OpenRouter"],
-                  ["Usage", "Input and output tokens"],
-                  ["Balance", "Deduction recorded"],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="grid gap-1 py-4 text-sm sm:grid-cols-[9rem_1fr] sm:gap-6"
-                  >
-                    <dt className="text-muted-foreground">{label}</dt>
-                    <dd className="font-semibold">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </div>
-        </section>
-
-        <section className="border-t border-foreground/15">
-          <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-16 sm:px-8 sm:py-20 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-                Project status
-              </p>
-              <h2 className="mt-5 font-sans text-4xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
-                The model is defined. The platform is in early development.
-              </h2>
-              <p className="mt-5 max-w-xl leading-7 text-muted-foreground">
-                The next product work covers GitHub authentication, project
-                registration, external funding, AI Balance management, gateway
-                access, and usage records.
+            <div className="border-t border-foreground/20 pt-5">
+              <h3 className="font-semibold">Keep usage accountable</h3>
+              <p className="mt-3 leading-7 text-muted-foreground">
+                OSSFuel records the project, model, provider, usage, cost, and
+                balance deduction for each successful request.
               </p>
             </div>
-            {authCta}
           </div>
-        </section>
-      </main>
-
-      <footer className="border-t border-foreground/15">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <Logo size={24} />
-          <p>Open-source funding with the AI spend in view.</p>
         </div>
-      </footer>
-    </div>
+      </section>
+
+      <section
+        id="flow"
+        className="mx-auto max-w-6xl px-5 py-20 sm:px-8 sm:py-28"
+      >
+        <div className="max-w-2xl">
+          <p className={eyebrowSection}>The flow</p>
+          <h2 className="mt-5 font-sans text-5xl leading-[0.98] font-bold tracking-[-0.05em] sm:text-6xl">
+            Follow a contribution from funding to usage.
+          </h2>
+        </div>
+        <div className="mt-14 border-l border-foreground/25 pl-5 sm:pl-8">
+          {flowSteps.map(([step, title, description]) => (
+            <article
+              key={step}
+              className="relative border-b border-foreground/15 py-6 first:pt-0 last:border-b-0"
+            >
+              <span
+                className="absolute top-7 -left-[1.8rem] h-2.5 w-2.5 rounded-full bg-foreground sm:-left-[2.3rem]"
+                aria-hidden="true"
+              />
+              <p className={eyebrowItem}>{step}</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[10rem_1fr] sm:gap-8">
+                <h3 className="text-lg font-semibold">{title}</h3>
+                <p className="text-sm leading-6 text-muted-foreground">
+                  {description}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section
+        id="record"
+        className="border-t border-foreground/15 bg-secondary"
+      >
+        <div className="mx-auto grid max-w-6xl gap-12 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[0.8fr_1.2fr] lg:items-start lg:gap-24">
+          <div>
+            <p className={eyebrowSection}>The record</p>
+            <h2 className="mt-5 font-sans text-4xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
+              The balance stays tied to the work.
+            </h2>
+            <p className="mt-5 max-w-md leading-7 text-muted-foreground">
+              Each successful request creates a record that explains what
+              happened to the project balance.
+            </p>
+          </div>
+          <div className="border border-foreground/20 bg-background p-5 sm:p-8">
+            <div className="flex items-center justify-between border-b border-foreground/15 pb-5">
+              <div>
+                <p className={eyebrowItem}>Usage record</p>
+                <p className="mt-2 font-sans text-2xl font-bold tracking-[-0.04em]">
+                  Project request
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                <Check size={14} aria-hidden="true" />
+                Successful
+              </span>
+            </div>
+            <dl className="divide-y divide-foreground/15">
+              {[
+                ["Project", "Open-source project"],
+                ["Request", "AI Gateway request"],
+                ["Provider", "OpenRouter"],
+                ["Usage", "Input and output tokens"],
+                ["Balance", "Deduction recorded"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="grid gap-1 py-4 text-sm sm:grid-cols-[9rem_1fr] sm:gap-6"
+                >
+                  <dt className="text-muted-foreground">{label}</dt>
+                  <dd className="font-semibold">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-foreground/15">
+        <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-16 sm:px-8 sm:py-20 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <p className={eyebrowSection}>Project status</p>
+            <h2 className="mt-5 font-sans text-4xl leading-tight font-bold tracking-[-0.04em] sm:text-5xl">
+              The model is defined. The platform is in early development.
+            </h2>
+            <p className="mt-5 max-w-xl leading-7 text-muted-foreground">
+              GitHub sign-in and project registration are in place, so
+              maintainers can link a public repository to a project. Funding, AI
+              Balance management, gateway access, and usage records come next.
+            </p>
+          </div>
+          {authCta}
+        </div>
+      </section>
+    </main>
   )
 }
