@@ -19,6 +19,9 @@ dist-ssr
 # turbo
 .turbo
 
+# agent scratch state
+.superpowers
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
