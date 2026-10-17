@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace OSSFuel.IntegrationTests;
+namespace OSSFuel.IntegrationTests.Infrastructure;
 
 public class OSSFuelWebApplicationFactory : WebApplicationFactory<Program>
 {

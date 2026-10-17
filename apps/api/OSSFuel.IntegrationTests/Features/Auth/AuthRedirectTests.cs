@@ -1,7 +1,7 @@
 using System.Net;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace OSSFuel.IntegrationTests;
+namespace OSSFuel.IntegrationTests.Features.Auth;
 
 public class AuthRedirectTests(OSSFuelWebApplicationFactory factory) : IClassFixture<OSSFuelWebApplicationFactory>
 {
