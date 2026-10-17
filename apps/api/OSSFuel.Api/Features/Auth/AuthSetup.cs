@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.EntityFrameworkCore;
 using OSSFuel.Api.Database;
+using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Users;
 
 namespace OSSFuel.Api.Features.Auth;
@@ -50,6 +51,7 @@ public static class AuthSetup
                 options.CallbackPath = "/signin-github";
                 options.Scope.Add("read:user");
                 options.Scope.Add("user:email");
+                options.Scope.Add("public_repo");
 
                 options.Events.OnCreatingTicket = GitHubEvents.OnCreatingTicket;
             });
@@ -92,6 +94,13 @@ public static class GitHubEvents
         user.AvatarUrl = GetProperty(context, "avatar_url");
         user.Email = context.Identity?.FindFirst(ClaimTypes.Email)?.Value;
         user.LastLoginAt = now;
+
+        if (!string.IsNullOrEmpty(context.AccessToken))
+        {
+            var protector = context.HttpContext.RequestServices.GetRequiredService<IGitHubTokenProtector>();
+            user.GitHubAccessToken = protector.Protect(context.AccessToken);
+            user.GitHubAccessTokenUpdatedAt = now;
+        }
 
         await db.SaveChangesAsync();
 

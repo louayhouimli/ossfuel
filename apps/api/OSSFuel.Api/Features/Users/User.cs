@@ -1,3 +1,5 @@
+using OSSFuel.Api.Features.Projects;
+
 namespace OSSFuel.Api.Features.Users;
 
 public class User
@@ -14,7 +16,13 @@ public class User
 
     public string? AvatarUrl { get; set; }
 
+    public string? GitHubAccessToken { get; set; }
+
+    public DateTimeOffset? GitHubAccessTokenUpdatedAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset LastLoginAt { get; set; }
+
+    public ICollection<Project> Projects { get; set; } = [];
 }
