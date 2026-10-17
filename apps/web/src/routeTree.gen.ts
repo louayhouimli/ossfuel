@@ -9,115 +9,214 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthLoginRouteImport } from './routes/_auth/login'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as SiteRouteRouteImport } from './routes/_site/route'
+import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
+import { Route as SiteIndexRouteImport } from './routes/_site/index'
+import { Route as SiteAuthenticatedRouteRouteImport } from './routes/_site/_authenticated/route'
+import { Route as SiteAuthenticatedDashboardRouteImport } from './routes/_site/_authenticated/dashboard'
+import { Route as SiteAuthenticatedImportRouteImport } from './routes/_site/_authenticated/import'
+import { Route as SiteProjectsIndexRouteImport } from './routes/_site/projects/index'
+import { Route as SiteProjectsProjectIdRouteImport } from './routes/_site/projects/$projectId'
 
-const IndexRoute = IndexRouteImport.update({
+const SiteRouteRoute = SiteRouteRouteImport.update({
+  id: '/_site',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignInRoute = AuthSignInRouteImport.update({
+  id: '/_auth/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SiteIndexRoute = SiteIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => SiteRouteRoute,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+const SiteAuthenticatedRouteRoute = SiteAuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => SiteRouteRoute,
 } as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/_auth/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
+const SiteAuthenticatedDashboardRoute =
+  SiteAuthenticatedDashboardRouteImport.update({
+    id: '/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => SiteAuthenticatedRouteRoute,
+  } as any)
+const SiteAuthenticatedImportRoute = SiteAuthenticatedImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => SiteAuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const SiteProjectsIndexRoute = SiteProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => SiteRouteRoute,
+} as any)
+const SiteProjectsProjectIdRoute = SiteProjectsProjectIdRouteImport.update({
+  id: '/projects/$projectId',
+  path: '/projects/$projectId',
+  getParentRoute: () => SiteRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login': typeof AuthLoginRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/': typeof SiteIndexRoute
+  '/sign-in': typeof AuthSignInRoute
+  '/dashboard': typeof SiteAuthenticatedDashboardRoute
+  '/import': typeof SiteAuthenticatedImportRoute
+  '/projects/$projectId': typeof SiteProjectsProjectIdRoute
+  '/projects/': typeof SiteProjectsIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof AuthLoginRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/': typeof SiteIndexRoute
+  '/sign-in': typeof AuthSignInRoute
+  '/dashboard': typeof SiteAuthenticatedDashboardRoute
+  '/import': typeof SiteAuthenticatedImportRoute
+  '/projects/$projectId': typeof SiteProjectsProjectIdRoute
+  '/projects': typeof SiteProjectsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/_auth/login': typeof AuthLoginRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_site': typeof SiteRouteRouteWithChildren
+  '/_site/_authenticated': typeof SiteAuthenticatedRouteRouteWithChildren
+  '/_auth/sign-in': typeof AuthSignInRoute
+  '/_site/': typeof SiteIndexRoute
+  '/_site/_authenticated/dashboard': typeof SiteAuthenticatedDashboardRoute
+  '/_site/_authenticated/import': typeof SiteAuthenticatedImportRoute
+  '/_site/projects/$projectId': typeof SiteProjectsProjectIdRoute
+  '/_site/projects/': typeof SiteProjectsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/sign-in'
+    | '/dashboard'
+    | '/import'
+    | '/projects/$projectId'
+    | '/projects/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/dashboard'
+  to:
+    | '/'
+    | '/sign-in'
+    | '/dashboard'
+    | '/import'
+    | '/projects/$projectId'
+    | '/projects'
   id:
     | '__root__'
-    | '/'
-    | '/_authenticated'
-    | '/_auth/login'
-    | '/_authenticated/dashboard'
+    | '/_site'
+    | '/_site/_authenticated'
+    | '/_auth/sign-in'
+    | '/_site/'
+    | '/_site/_authenticated/dashboard'
+    | '/_site/_authenticated/import'
+    | '/_site/projects/$projectId'
+    | '/_site/projects/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthLoginRoute: typeof AuthLoginRoute
+  SiteRouteRoute: typeof SiteRouteRouteWithChildren
+  AuthSignInRoute: typeof AuthSignInRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
+    '/_site': {
+      id: '/_site'
       path: ''
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      preLoaderRoute: typeof SiteRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/login': {
-      id: '/_auth/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
+    '/_auth/sign-in': {
+      id: '/_auth/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
+    '/_site/': {
+      id: '/_site/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof SiteIndexRouteImport
+      parentRoute: typeof SiteRouteRoute
+    }
+    '/_site/_authenticated': {
+      id: '/_site/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof SiteAuthenticatedRouteRouteImport
+      parentRoute: typeof SiteRouteRoute
+    }
+    '/_site/_authenticated/dashboard': {
+      id: '/_site/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      preLoaderRoute: typeof SiteAuthenticatedDashboardRouteImport
+      parentRoute: typeof SiteAuthenticatedRouteRoute
+    }
+    '/_site/_authenticated/import': {
+      id: '/_site/_authenticated/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof SiteAuthenticatedImportRouteImport
+      parentRoute: typeof SiteAuthenticatedRouteRoute
+    }
+    '/_site/projects/': {
+      id: '/_site/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof SiteProjectsIndexRouteImport
+      parentRoute: typeof SiteRouteRoute
+    }
+    '/_site/projects/$projectId': {
+      id: '/_site/projects/$projectId'
+      path: '/projects/$projectId'
+      fullPath: '/projects/$projectId'
+      preLoaderRoute: typeof SiteProjectsProjectIdRouteImport
+      parentRoute: typeof SiteRouteRoute
     }
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+interface SiteAuthenticatedRouteRouteChildren {
+  SiteAuthenticatedDashboardRoute: typeof SiteAuthenticatedDashboardRoute
+  SiteAuthenticatedImportRoute: typeof SiteAuthenticatedImportRoute
 }
 
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+const SiteAuthenticatedRouteRouteChildren: SiteAuthenticatedRouteRouteChildren =
+  {
+    SiteAuthenticatedDashboardRoute: SiteAuthenticatedDashboardRoute,
+    SiteAuthenticatedImportRoute: SiteAuthenticatedImportRoute,
+  }
+
+const SiteAuthenticatedRouteRouteWithChildren =
+  SiteAuthenticatedRouteRoute._addFileChildren(
+    SiteAuthenticatedRouteRouteChildren,
+  )
+
+interface SiteRouteRouteChildren {
+  SiteAuthenticatedRouteRoute: typeof SiteAuthenticatedRouteRouteWithChildren
+  SiteIndexRoute: typeof SiteIndexRoute
+  SiteProjectsProjectIdRoute: typeof SiteProjectsProjectIdRoute
+  SiteProjectsIndexRoute: typeof SiteProjectsIndexRoute
 }
 
-const AuthenticatedRouteRouteWithChildren =
-  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+const SiteRouteRouteChildren: SiteRouteRouteChildren = {
+  SiteAuthenticatedRouteRoute: SiteAuthenticatedRouteRouteWithChildren,
+  SiteIndexRoute: SiteIndexRoute,
+  SiteProjectsProjectIdRoute: SiteProjectsProjectIdRoute,
+  SiteProjectsIndexRoute: SiteProjectsIndexRoute,
+}
+
+const SiteRouteRouteWithChildren = SiteRouteRoute._addFileChildren(
+  SiteRouteRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthLoginRoute: AuthLoginRoute,
+  SiteRouteRoute: SiteRouteRouteWithChildren,
+  AuthSignInRoute: AuthSignInRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

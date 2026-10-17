@@ -15,5 +15,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(user => user.Name).HasMaxLength(200);
         builder.Property(user => user.Email).HasMaxLength(320);
         builder.Property(user => user.AvatarUrl).HasMaxLength(500);
+        builder.Property(user => user.GitHubAccessToken).HasMaxLength(2000);
     }
 }

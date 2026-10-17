@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace OSSFuel.IntegrationTests;
+namespace OSSFuel.IntegrationTests.Features.Health;
 
 public class HealthTests(OSSFuelWebApplicationFactory factory) : IClassFixture<OSSFuelWebApplicationFactory>
 {

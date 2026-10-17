@@ -19,5 +19,18 @@
   "packageManager": "pnpm@10.33.4",
   "engines": {
     "node": ">=20"
-  }
+  },
+  "description": "OSSFuel gives open-source maintainers a way to use sponsor-funded AI. Sponsors add funds to a project's AI balance, and maintainers spend that balance on the tools they need to build and maintain the project.",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/louayhouimli/ossfuel.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/louayhouimli/ossfuel/issues"
+  },
+  "homepage": "https://github.com/louayhouimli/ossfuel#readme"
 }

@@ -18,4 +18,8 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\OSSFuel.Api\OSSFuel.Api.csproj" />
+  </ItemGroup>
+
 </Project>

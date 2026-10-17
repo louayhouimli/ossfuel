@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace OSSFuel.IntegrationTests;
+namespace OSSFuel.IntegrationTests.Features.Auth;
 
 public class AuthTests(OSSFuelWebApplicationFactory factory) : IClassFixture<OSSFuelWebApplicationFactory>
 {
