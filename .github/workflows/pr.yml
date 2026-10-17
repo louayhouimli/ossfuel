@@ -1,0 +1,63 @@
+name: Pull request
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore apps/api/api.slnx
+
+      - name: Build
+        run: dotnet build apps/api/api.slnx --configuration Release --no-restore
+
+      - name: Unit tests
+        run: dotnet test apps/api/OSSFuel.UnitTests/OSSFuel.UnitTests.csproj --configuration Release --no-build
+
+      - name: Integration tests
+        run: dotnet test apps/api/OSSFuel.IntegrationTests/OSSFuel.IntegrationTests.csproj --configuration Release --no-build
+
+  web:
+    name: Web checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter web lint
+
+      - name: Typecheck
+        run: pnpm --filter web typecheck
+
+      - name: Build
+        run: pnpm --filter web build
