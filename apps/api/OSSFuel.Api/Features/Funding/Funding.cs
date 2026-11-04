@@ -8,37 +8,37 @@ public class Funding
 {
     public const string MockProvider = "mock";
 
-    public Guid Id { get; set; }
+    public Guid Id { get; init; }
 
-    public Guid ProjectId { get; set; }
+    public Guid ProjectId { get; init; }
 
-    public Guid SponsorUserId { get; set; }
+    public Guid SponsorUserId { get; init; }
 
-    public long AmountMinor { get; set; }
+    public long AmountMinor { get; init; }
 
-    public string Currency { get; set; } = Money.Currency;
+    public string Currency { get; init; } = Money.Currency;
 
-    public FundingStatus Status { get; set; }
+    public FundingStatus Status { get; private set; }
 
-    public string Provider { get; set; } = MockProvider;
+    public string Provider { get; init; } = MockProvider;
 
-    public string? ProviderCheckoutSessionId { get; set; }
+    public string? ProviderCheckoutSessionId { get; private set; }
 
-    public string? ProviderCheckoutUrl { get; set; }
+    public string? ProviderCheckoutUrl { get; private set; }
 
-    public string? ProviderPaymentIntentId { get; set; }
+    public string? ProviderPaymentIntentId { get; private set; }
 
-    public string? FailureReason { get; set; }
+    public string? FailureReason { get; private set; }
 
-    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; init; }
 
-    public DateTimeOffset UpdatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; private set; }
 
-    public DateTimeOffset? CompletedAt { get; set; }
+    public DateTimeOffset? CompletedAt { get; private set; }
 
-    public Project Project { get; set; } = null!;
+    public Project Project { get; init; } = null!;
 
-    public User Sponsor { get; set; } = null!;
+    public User Sponsor { get; init; } = null!;
 
     public static Funding Create(Guid projectId, Guid sponsorUserId, long amountMinor, DateTimeOffset now) =>
         new()

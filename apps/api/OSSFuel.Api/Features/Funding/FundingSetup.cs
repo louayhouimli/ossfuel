@@ -19,16 +19,6 @@ public static class FundingSetup
             return services;
         }
 
-        if (string.Equals(
-                configuration["Payments:Provider"],
-                MockProviderName,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException(
-                "The mock payment provider is only allowed in Development. "
-                + "Set Payments:Provider to a real provider before running outside Development.");
-        }
-
         services.AddSingleton<IPaymentProvider, UnconfiguredPaymentProvider>();
 
         return services;

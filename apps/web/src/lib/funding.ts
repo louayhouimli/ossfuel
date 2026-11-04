@@ -101,6 +101,12 @@ export function createFunding(
   })
 }
 
+export function cancelFunding(fundingId: string): Promise<Funding> {
+  return apiFetch<Funding>(`/fundings/${fundingId}/cancel`, {
+    method: "POST",
+  })
+}
+
 export function completeMockPayment(
   fundingId: string,
   outcome: "succeeded" | "failed" | "cancelled"

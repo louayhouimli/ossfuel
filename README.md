@@ -18,7 +18,7 @@ General project funding does not show which AI requests were paid for or how muc
 6. The provider returns the response and usage data.
 7. OSSFuel calculates the cost, deducts the balance, and records a transaction.
 
-Funding → AI balance → AI usage → cost → balance transaction
+`Funding → AI balance → AI usage → cost → balance transaction`
 
 ## What OSSFuel is
 
@@ -28,22 +28,24 @@ Potential clients include Aider, Continue, and custom integrations. OSSFuel will
 
 ## Current status
 
-The project is in early development. The repository currently contains:
+The repository currently contains:
 
-- A React and TypeScript web application
-- An ASP.NET Core API
-- PostgreSQL setup through Docker Compose
-- Unit and integration test projects
-- Initial authentication screens and health endpoints
+- GitHub OAuth authentication and sliding session cookies
+- Project linking from GitHub and public project discovery
+- Dedicated AI balance ledger (`AmountMinor` in USD cents) with concurrency controls
+- Sponsor funding flow with checkout sessions, cancellation, and resumption
+- ASP.NET Core API with vertical slice architecture and PostgreSQL database
+- React and TypeScript web frontend (Vite, TanStack Router)
+- Unit and integration test suites (98 automated tests)
 
-The payment flow, AI gateway, provider integration, balance ledger, and usage analytics are planned but are not implemented yet.
+The AI gateway (OpenRouter proxy, API keys), token usage tracking, and maintainer analytics dashboard are planned for the upcoming sprints.
 
 ## Tech stack
 
-- **Frontend:** React, TypeScript, Vite, TanStack Router, TanStack Query, shadcn/ui
-- **Backend:** C#, ASP.NET Core, REST API
-- **Database:** PostgreSQL
-- **Testing:** xUnit and integration testing
+- **Frontend**: React, TypeScript, Vite, TanStack Router, TanStack Query, shadcn/ui, Tailwind CSS
+- **Backend**: C#, ASP.NET Core, REST API, Entity Framework Core
+- **Database**: PostgreSQL
+- **Testing**: xUnit and WebApplicationFactory integration testing
 
 ## Planned architecture
 
@@ -72,16 +74,19 @@ The API also needs to receive verified payment events and expose project-level f
 apps/web       React frontend
 apps/api       ASP.NET Core API and .NET tests
 packages/ui    Shared UI components and styles
+docs/          Specifications and implementation plans
 ```
 
 ## Local development
 
-Requirements:
+### Requirements
 
 - Node.js 20 or newer
 - pnpm 10
-- .NET 10
+- .NET 10 SDK
 - Docker with Docker Compose
+
+### Getting started
 
 Install dependencies and start the local services:
 
@@ -98,6 +103,13 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+```
+
+You can also run the .NET tests directly:
+
+```bash
+dotnet test apps/api/OSSFuel.UnitTests/OSSFuel.UnitTests.csproj -c Release
+dotnet test apps/api/OSSFuel.IntegrationTests/OSSFuel.IntegrationTests.csproj -c Release
 ```
 
 ## Long-term goal

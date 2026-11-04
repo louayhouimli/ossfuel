@@ -2,19 +2,19 @@ namespace OSSFuel.Api.Features.Balances;
 
 public class AIBalance
 {
-    public Guid Id { get; set; }
+    public Guid Id { get; init; }
 
-    public Guid ProjectId { get; set; }
+    public Guid ProjectId { get; init; }
 
-    public long AmountMinor { get; set; }
+    public long AmountMinor { get; private set; }
 
-    public string Currency { get; set; } = Money.Currency;
+    public string Currency { get; init; } = Money.Currency;
 
-    public uint RowVersion { get; set; }
+    public uint RowVersion { get; private set; }
 
-    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; init; }
 
-    public DateTimeOffset UpdatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; private set; }
 
     public IReadOnlyCollection<BalanceTransaction> Transactions => _transactions;
 
