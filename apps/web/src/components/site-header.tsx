@@ -133,9 +133,14 @@ export function SiteHeader() {
             Projects
           </Link>
           {user ? (
-            <Link to="/dashboard" className={navLinkClass}>
-              Dashboard
-            </Link>
+            <>
+              <Link to="/dashboard" className={navLinkClass}>
+                Dashboard
+              </Link>
+              <Link to="/fundings" className={navLinkClass}>
+                Funding
+              </Link>
+            </>
           ) : null}
         </nav>
 
@@ -188,13 +193,22 @@ export function SiteHeader() {
               Projects
             </Link>
             {user ? (
-              <Link
-                to="/dashboard"
-                onClick={() => setMenuOpen(false)}
-                className={navLinkClass}
-              >
-                Dashboard
-              </Link>
+              <>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMenuOpen(false)}
+                  className={navLinkClass}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/fundings"
+                  onClick={() => setMenuOpen(false)}
+                  className={navLinkClass}
+                >
+                  Funding
+                </Link>
+              </>
             ) : null}
             <div className="mt-2">{themeButton}</div>
             <div className="mt-2">{authArea}</div>

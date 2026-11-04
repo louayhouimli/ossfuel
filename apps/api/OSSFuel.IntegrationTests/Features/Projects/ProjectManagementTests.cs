@@ -51,6 +51,23 @@ public class ProjectManagementTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteProject_WhenItHasFunding_ReturnsConflictAndKeepsEverything()
+    {
+        var ownerId = _factory.SeedUser(login: "owner");
+        var sponsorId = _factory.SeedUser(login: "sponsor");
+        var projectId = _factory.SeedProject(ownerId);
+        var fundingId = _factory.SeedFunding(projectId, sponsorId, status: "succeeded");
+
+        var response = await _factory.CreateClientFor(ownerId).DeleteAsync($"/projects/{projectId}");
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+
+        var reread = await _factory.CreateClient().GetAsync($"/projects/{projectId}");
+        Assert.Equal(HttpStatusCode.OK, reread.StatusCode);
+        Assert.True(_factory.ReadDb(db => db.Fundings.Any(funding => funding.Id == fundingId)));
+    }
+
+    [Fact]
     public async Task DeleteProject_WhenUnauthenticated_ReturnsUnauthorized()
     {
         var ownerId = _factory.SeedUser();

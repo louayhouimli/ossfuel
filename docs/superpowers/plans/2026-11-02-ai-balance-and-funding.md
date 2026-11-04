@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give every project a Stripe-funded AI Balance, credited exactly once per verified payment, and visible to the maintainer as a transaction history.
+**Goal:** Give every project a Stripe-funded AI Balance, credited exactly once per verified payment, and visible on the project page as a transaction history.
 
 **Architecture:** Two new API features. `Balances` owns the balance row and its immutable transaction ledger. `Funding` owns the sponsor's funding record, the payment-provider adapter, and one application service that is the only writer of balance changes. The web reads both features through two new route files and two panels on the existing project page.
 
@@ -32,7 +32,7 @@ The spec does not enumerate these, and a reasonable person would expect them to 
 2. A valid amount like `0.10` or `25.50` is rejected or turned into 24 or 26 cents → validation tests in Task 4 and the hand check in Task 12.
 3. Two webhook deliveries for one payment arrive at the same moment and credit twice → concurrency test in Task 11.
 4. A cancelled or expired event arrives after the funding already succeeded and drags it backwards → status guard test in Task 5.
-5. One maintainer deep-links to another project's balance and reads it → authorization test in Task 2.
+5. A signed-out visitor opens a project page and the balance panel is blank or errors, because the read was built for signed-in users → anonymous test in Task 2 and the signed-out check in Task 12.
 6. A maintainer deletes a project that received money and the API answers 500 → delete guard test in Task 3.
 
 ---
@@ -212,6 +212,7 @@ git commit -m "feat(api): open an AI balance with every project"
 **Files:**
 - Create: `apps/api/OSSFuel.Api/Features/Balances/BalanceContracts.cs`
 - Create: `apps/api/OSSFuel.Api/Features/Balances/BalanceEndpoints.cs`
+- Modify: `apps/api/OSSFuel.Api/Database/OSSFuelDbContext.cs`
 - Modify: `apps/api/OSSFuel.Api/Program.cs`
 - Test: `apps/api/OSSFuel.IntegrationTests/Features/Balances/BalanceAccessTests.cs`
 - Test: `apps/api/OSSFuel.IntegrationTests/Features/Balances/BalanceTransactionTests.cs`
@@ -225,13 +226,13 @@ git commit -m "feat(api): open an AI balance with every project"
 ```csharp
 // BalanceAccessTests.cs
 [Fact]
-public async Task Owner_reads_the_balance()
+public async Task Anyone_reads_the_balance()
 {
     var owner = factory.SeedUser("maintainer");
     var projectId = factory.SeedProject(owner);
     factory.SeedCredit(projectId, 1500, "Funding received");
 
-    var response = await factory.CreateClientFor(owner).GetAsync($"/projects/{projectId}/balance");
+    var response = await factory.CreateClient().GetAsync($"/projects/{projectId}/balance");
 
     response.EnsureSuccessStatusCode();
     var body = await response.Content.ReadFromJsonAsync<BalancePayload>();
@@ -240,29 +241,26 @@ public async Task Owner_reads_the_balance()
 }
 
 [Fact]
-public async Task Another_user_is_forbidden()
+public async Task Another_user_sees_the_same_balance()
 {
     var owner = factory.SeedUser("maintainer");
     var stranger = factory.SeedUser("stranger");
     var projectId = factory.SeedProject(owner);
+    factory.SeedCredit(projectId, 1500, "Funding received");
 
     var response = await factory.CreateClientFor(stranger).GetAsync($"/projects/{projectId}/balance");
 
-    Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    response.EnsureSuccessStatusCode();
+    Assert.Equal(1500, (await response.Content.ReadFromJsonAsync<BalancePayload>())!.AmountMinor);
 }
 
 [Fact]
 public async Task Unknown_project_is_not_found()
 {
-    var userId = factory.SeedUser();
-
-    var response = await factory.CreateClientFor(userId).GetAsync($"/projects/{Guid.NewGuid()}/balance");
+    var response = await factory.CreateClient().GetAsync($"/projects/{Guid.NewGuid()}/balance");
 
     Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 }
-
-[Fact]
-public async Task Anonymous_is_unauthorized() { /* GET without the test header -> 401 */ }
 
 [Fact]
 public async Task A_missing_balance_is_created_instead_of_returning_500()
@@ -275,7 +273,7 @@ public async Task A_missing_balance_is_created_instead_of_returning_500()
         return db.SaveChanges();
     });
 
-    var response = await factory.CreateClientFor(owner).GetAsync($"/projects/{projectId}/balance");
+    var response = await factory.CreateClient().GetAsync($"/projects/{projectId}/balance");
 
     response.EnsureSuccessStatusCode();
     Assert.Equal(0, (await response.Content.ReadFromJsonAsync<BalancePayload>())!.AmountMinor);
@@ -288,16 +286,19 @@ public async Task A_missing_balance_is_created_instead_of_returning_500()
 [Fact]
 public async Task History_is_newest_first_and_paginated()
 {
-    // Seed three credits at now-2h, now-1h, now, read page 1 size 2,
+    // Seed three credits at now-2h, now-1h, now, read page 1 size 2 anonymously,
     // assert the newest two in descending order and TotalCount 3.
 }
 
 [Fact]
-public async Task Another_user_cannot_read_history() { /* 403 */ }
+public async Task Anyone_reads_the_history()
+{
+    // Seed one credit, GET the transactions anonymously, assert the single item.
+}
 ```
 
 Add `private sealed record BalancePayload(Guid ProjectId, long AmountMinor, string Currency);` inside each file.
-`factory.SeedCredit` was added in Task 1.
+`factory.SeedCredit` and `factory.SeedProject`'s zero balance come from Task 1.
 
 - [ ] **Step 2: Run them and confirm they fail**
 
@@ -306,18 +307,13 @@ Expected: 404, because no route exists.
 
 - [ ] **Step 3: Implement the endpoints**
 
-`BalanceEndpoints.GetBalanceAsync`: first extract `ProjectEndpoints.LoadCurrentUserAsync` into `apps/api/OSSFuel.Api/Features/Users/UserLookup.cs` as
+Both routes are public project information: no `RequireAuthorization`, no current-user lookup, no owner check.
 
-```csharp
-internal static class UserLookup
-{
-    public static Task<User?> LoadAsync(ClaimsPrincipal principal, OSSFuelDbContext db, CancellationToken ct)
-}
-```
+`BalanceEndpoints.GetBalanceAsync`: load the project by id; 404 when it is missing. Load the balance separately with `db.AIBalances.FirstOrDefaultAsync(b => b.ProjectId == id)` (there is no navigation on `Project`); if it is missing, insert `AIBalance.Open(projectId, now)` and save, catching `DbUpdateException` and reloading, so a missing row cannot become a 500; return `BalanceResponse`.
 
-with the existing body, and point `ProjectEndpoints` at it. Then load the project by id, and load the balance separately with `db.AIBalances.FirstOrDefaultAsync(b => b.ProjectId == id)` (no navigation on `Project`, so the projects feature stays untouched); 404 when the project is missing; 403 when `OwnerUserId` differs; if the balance is missing, insert `AIBalance.Open(projectId, now)` and save, catching `DbUpdateException` and reloading, so a missing row cannot become a 500; return `BalanceResponse`.
+`GetTransactionsAsync`: same public read, then query `BalanceTransactions` by `AIBalanceId`, `OrderByDescending(t => t.CreatedAt)`, page and page size clamped to 1..50 with default 20, project to the response.
 
-`GetTransactionsAsync`: same authorization, then query `BalanceTransactions` by `AIBalanceId`, `OrderByDescending(t => t.CreatedAt)`, page and page size clamped to 1..50 with default 20, project to the response.
+Add `DbSet<BalanceTransaction> BalanceTransactions` to `OSSFuelDbContext`: Task 1 shipped the entity without the set, and this task queries it.
 
 Register in `Program.cs`: `app.MapBalanceEndpoints();` after `app.MapProjectEndpoints();`.
 
@@ -1196,7 +1192,7 @@ export function formatMinor(amountMinor: number, currency: string): string {
 
 - [ ] **Step 2: Add the balance panel**
 
-For `canManage`, under the maintainer section: the amount from `GET /projects/{id}/balance` with `formatMinor`, then the transaction list from `GET /projects/{id}/balance/transactions` with `LiveTime` for the date and a signed amount. Empty state text: "No transactions yet." Loading uses `Loader`.
+For every visitor, above the fund panel: the amount from `GET /projects/{id}/balance` with `formatMinor`, then the transaction list from `GET /projects/{id}/balance/transactions` with `LiveTime` for the date and a signed amount. Empty state text: "No transactions yet." Loading uses `Loader`.
 
 - [ ] **Step 3: Add the fund panel**
 
@@ -1268,7 +1264,7 @@ Set `Stripe:SecretKey` and `Stripe:WebhookSecret` through user secrets, start `s
 
 - [ ] **Step 2: Run the flow**
 
-Start the API and web. Sign in, open a project, fund $5.00, pay with `4242 4242 4242 4242`, and land on the return page. Confirm the page reaches `succeeded`, the maintainer sees $5.00 and one transaction, and `/fundings` lists it.
+Start the API and web. Sign in, open a project, fund $5.00, pay with `4242 4242 4242 4242`, and land on the return page. Confirm the page reaches `succeeded`, the project page shows $5.00 and one transaction to a signed-out visitor too, and `/fundings` lists it.
 
 - [ ] **Step 3: Prove the failure paths**
 

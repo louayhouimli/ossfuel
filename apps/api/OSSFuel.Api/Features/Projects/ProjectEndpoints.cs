@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Balances;
+using OSSFuel.Api.Features.Funding;
 using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Users;
 
@@ -89,6 +90,11 @@ public static class ProjectEndpoints
         if (project.OwnerUserId != user.Id)
         {
             return NotPermittedProblem();
+        }
+
+        if (await db.Fundings.AnyAsync(funding => funding.ProjectId == id, cancellationToken))
+        {
+            return FundedProjectProblem();
         }
 
         db.Projects.Remove(project);
@@ -349,6 +355,12 @@ public static class ProjectEndpoints
             statusCode: StatusCodes.Status403Forbidden,
             title: "Not permitted",
             detail: "Only the maintainer who registered this project can change it.");
+
+    private static IResult FundedProjectProblem() =>
+        Results.Problem(
+            statusCode: StatusCodes.Status409Conflict,
+            title: "Project has funding",
+            detail: "This project has funding history. Projects with funding cannot be deleted.");
 
     private static IResult AlreadyRegisteredProblem() =>
         Results.Problem(

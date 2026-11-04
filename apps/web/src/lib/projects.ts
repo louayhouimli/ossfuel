@@ -44,7 +44,8 @@ export type AvailableRepository = {
 export const projectsQueryOptions = (page: number, pageSize: number) =>
   queryOptions({
     queryKey: ["projects", { page, pageSize }],
-    queryFn: () => apiFetch<ProjectList>(`/projects?page=${page}&pageSize=${pageSize}`),
+    queryFn: () =>
+      apiFetch<ProjectList>(`/projects?page=${page}&pageSize=${pageSize}`),
     placeholderData: keepPreviousData,
   })
 

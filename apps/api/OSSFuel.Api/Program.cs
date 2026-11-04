@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.HttpOverrides;
 using OSSFuel.Api.Common;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Auth;
+using OSSFuel.Api.Features.Balances;
+using OSSFuel.Api.Features.Funding;
 using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Health;
 using OSSFuel.Api.Features.Projects;
@@ -24,6 +26,7 @@ builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddAppCors(builder.Configuration);
 builder.Services.AddAuthFeature(builder.Configuration);
 builder.Services.AddGitHubFeature(builder.Configuration);
+builder.Services.AddFundingFeature(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -47,6 +50,8 @@ await app.MigrateDatabaseAsync();
 app.MapAuthEndpoints();
 app.MapHealthEndpoints();
 app.MapProjectEndpoints();
+app.MapBalanceEndpoints();
+app.MapFundingEndpoints(FundingSetup.UsesMockProvider(builder.Configuration, builder.Environment));
 
 app.Run();
 

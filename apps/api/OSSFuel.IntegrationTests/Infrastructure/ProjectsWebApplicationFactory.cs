@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Balances;
+using OSSFuel.Api.Features.Funding;
 using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Projects;
 using OSSFuel.Api.Features.Users;
@@ -21,6 +22,8 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
     private readonly string _databaseName = $"ossfuel-projects-{Guid.NewGuid()}";
 
     public FakeGitHubRepositoryClient GitHub { get; } = new();
+
+    public FakePaymentProvider Payments { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -41,6 +44,9 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IGitHubRepositoryClient>();
             services.AddSingleton<IGitHubRepositoryClient>(GitHub);
+
+            services.RemoveAll<IPaymentProvider>();
+            services.AddSingleton<IPaymentProvider>(Payments);
         });
     }
 
@@ -52,7 +58,10 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
         return client;
     }
 
-    public Guid SeedUser(string login = "octocat", string? accessToken = "github-access-token")
+    public Guid SeedUser(
+        string login = "octocat",
+        string? accessToken = "github-access-token",
+        string? avatarUrl = null)
     {
         using var scope = Services.CreateScope();
         var provider = scope.ServiceProvider;
@@ -64,6 +73,8 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
             Id = Guid.NewGuid(),
             GitHubId = Interlocked.Increment(ref _nextGitHubId),
             Login = login,
+            Name = $"{login} name",
+            AvatarUrl = avatarUrl,
             CreatedAt = now,
             LastLoginAt = now,
         };
@@ -125,14 +136,76 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
         return read(scope.ServiceProvider.GetRequiredService<OSSFuelDbContext>());
     }
 
-    public Guid SeedCredit(Guid projectId, long amountMinor, string? description = "Funding received")
+    public Guid SeedCredit(
+        Guid projectId,
+        long amountMinor,
+        string? description = "Funding received",
+        DateTimeOffset? createdAt = null,
+        Guid? fundingId = null)
     {
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<OSSFuelDbContext>();
         var balance = db.AIBalances.Single(b => b.ProjectId == projectId);
-        balance.Credit(amountMinor, Guid.NewGuid(), description, DateTimeOffset.UtcNow);
+        var transaction = balance.Credit(
+            amountMinor,
+            fundingId ?? Guid.NewGuid(),
+            description,
+            createdAt ?? DateTimeOffset.UtcNow);
         db.SaveChanges();
 
-        return balance.Id;
+        return transaction.Id;
     }
+
+    public Guid SeedFunding(
+        Guid projectId,
+        Guid sponsorUserId,
+        long amountMinor = 2500,
+        string status = "pending",
+        DateTimeOffset? createdAt = null)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OSSFuelDbContext>();
+        var now = createdAt ?? DateTimeOffset.UtcNow;
+        var funding = Funding.Create(projectId, sponsorUserId, amountMinor, now);
+        funding.MarkCheckoutCreated(
+            $"fake_{funding.Id:N}",
+            $"https://payments.test/checkout/{funding.Id}",
+            now);
+
+        switch (status)
+        {
+            case "succeeded":
+                funding.MarkSucceeded($"fake_pi_{funding.Id:N}", now);
+                break;
+            case "failed":
+                funding.MarkFailed("Seeded failure.", now);
+                break;
+            case "cancelled":
+                funding.MarkCancelled("Seeded cancellation.", now);
+                break;
+        }
+
+        db.Fundings.Add(funding);
+        db.SaveChanges();
+
+        return funding.Id;
+    }
+
+    public Guid SeedFundingCredit(
+        Guid projectId,
+        string sponsorLogin = "sponsor",
+        string? sponsorAvatarUrl = "https://avatars.test/sponsor.png",
+        long amountMinor = 1000)
+    {
+        var sponsorId = SeedUser(sponsorLogin, accessToken: null, avatarUrl: sponsorAvatarUrl);
+        var fundingId = SeedFunding(projectId, sponsorId, amountMinor, "succeeded");
+
+        return SeedCredit(projectId, amountMinor, fundingId: fundingId);
+    }
+
+    public string SessionIdOf(Guid fundingId) =>
+        ReadDb(db => db.Fundings.Single(funding => funding.Id == fundingId).ProviderCheckoutSessionId!);
+
+    public long BalanceOf(Guid projectId) =>
+        ReadDb(db => db.AIBalances.Single(balance => balance.ProjectId == projectId).AmountMinor);
 }

@@ -22,6 +22,201 @@ namespace OSSFuel.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("OSSFuel.Api.Features.Balances.AIBalance", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("AmountMinor")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId")
+                        .IsUnique();
+
+                    b.ToTable("AIBalances");
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Balances.BalanceTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AIBalanceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("AmountMinor")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("FundingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FundingId")
+                        .IsUnique();
+
+                    b.HasIndex("AIBalanceId", "CreatedAt");
+
+                    b.ToTable("BalanceTransactions");
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Funding.Funding", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("AmountMinor")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ProviderCheckoutSessionId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("ProviderCheckoutUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ProviderPaymentIntentId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<Guid>("SponsorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("ProviderCheckoutSessionId")
+                        .IsUnique();
+
+                    b.HasIndex("SponsorUserId", "CreatedAt");
+
+                    b.HasIndex("SponsorUserId", "ProjectId")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'pending'");
+
+                    b.ToTable("Fundings");
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Funding.PaymentEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ProviderEventId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ProviderObjectId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTimeOffset>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProviderEventId")
+                        .IsUnique();
+
+                    b.ToTable("PaymentEvents");
+                });
+
             modelBuilder.Entity("OSSFuel.Api.Features.Projects.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -148,6 +343,43 @@ namespace OSSFuel.Api.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("OSSFuel.Api.Features.Balances.AIBalance", b =>
+                {
+                    b.HasOne("OSSFuel.Api.Features.Projects.Project", null)
+                        .WithOne()
+                        .HasForeignKey("OSSFuel.Api.Features.Balances.AIBalance", "ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Balances.BalanceTransaction", b =>
+                {
+                    b.HasOne("OSSFuel.Api.Features.Balances.AIBalance", null)
+                        .WithMany("Transactions")
+                        .HasForeignKey("AIBalanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Funding.Funding", b =>
+                {
+                    b.HasOne("OSSFuel.Api.Features.Projects.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OSSFuel.Api.Features.Users.User", "Sponsor")
+                        .WithMany()
+                        .HasForeignKey("SponsorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+
+                    b.Navigation("Sponsor");
+                });
+
             modelBuilder.Entity("OSSFuel.Api.Features.Projects.Project", b =>
                 {
                     b.HasOne("OSSFuel.Api.Features.Users.User", "Owner")
@@ -157,6 +389,11 @@ namespace OSSFuel.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Balances.AIBalance", b =>
+                {
+                    b.Navigation("Transactions");
                 });
 
             modelBuilder.Entity("OSSFuel.Api.Features.Users.User", b =>

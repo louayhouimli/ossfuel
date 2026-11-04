@@ -10,7 +10,7 @@ Branch: `feature/sprint-2-ai-balance-funding`, cut from `feature/sprint-2-projec
 
 Today a project is a read-only snapshot of a GitHub repository. Nobody can put money behind it.
 This increment gives every project a balance, lets a sponsor put money into that balance through
-Stripe, and makes every credit visible to the maintainer as a transaction.
+Stripe, and makes every credit visible on the project page as a transaction.
 
 The premise that shapes everything below: **a successful payment and a successful balance credit
 are two separate events, controlled by two systems**. Stripe owns the money. OSSFuel owns the
@@ -24,8 +24,8 @@ The Stripe adapter wraps them afterwards, because the adapter is the part most l
 
 - Every project has exactly one AI Balance, opened at zero with the project and backfilled for
   projects that already exist.
-- A maintainer can read the balance and its transaction history, and nobody else can.
-- A sponsor can pick a project, name an amount, pay through Stripe Checkout, and see the outcome.
+- Anyone, signed in or not, can read a project's balance and its transaction history on the project page.
+- A sponsor can pick a project, name an amount, pay on a mock checkout page, and see the outcome.
 - A verified `checkout.session.completed` credits the balance exactly once, writes exactly one
   balance transaction, and moves the funding to `succeeded`, all in one database transaction.
 - Failed, cancelled, pending, unverified, and unmatched payments never touch the balance.
@@ -38,9 +38,9 @@ The Stripe adapter wraps them afterwards, because the adapter is the part most l
   AI Usage and Cost Management epic.
 - Refunds and chargebacks. The events are recorded for later, but no balance is reversed. See
   section 12.
-- Public balance or funding totals on the landing page or the public project page.
+- Balance totals on the landing page. The project page is the only public surface for a balance.
 - Invoices, receipts, and tax documents.
-- Any payment provider other than Stripe.
+- A real payment provider. The mock provider stands in for Stripe, which lands in a later increment behind the same `IPaymentProvider` interface.
 - Referral credit, platform fees, or a conversion rate other than 1:1.
 
 ## 4. Anti-goals
@@ -64,9 +64,10 @@ These are failure states even if the code appears to work:
 | Conversion | 1:1, one cent paid equals one cent of balance, no platform fee |
 | Balance representation | Integer minor units (`long`), never floating point |
 | Funding statuses | `pending`, `succeeded`, `failed`, `cancelled` |
+| Payment provider | Mock provider in process; Stripe behind the same interface later |
 | Refunds and chargebacks | Recorded, not reversed, deferred to a later increment |
 | Limits | Minimum $1.00, maximum $10,000.00 per funding, both configurable |
-| Visibility | Balance and transactions: maintainer only. Funding history: sponsor only |
+| Visibility | Balance and transactions: public on the project page. Funding history: sponsor only |
 | Base branch | The pushed project management branch, not `main` |
 
 ## 6. Money
@@ -167,13 +168,13 @@ the shared `LoadCurrentUserAsync` pattern from `ProjectEndpoints`, cookies for a
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
-| GET | `/projects/{id}/balance` | project owner | current balance |
-| GET | `/projects/{id}/balance/transactions?page&pageSize` | project owner | history, newest first |
+| GET | `/projects/{id}/balance` | public | current balance |
+| GET | `/projects/{id}/balance/transactions?page&pageSize` | public | history, newest first |
 | POST | `/fundings` | any signed-in user | create funding, open a Checkout Session |
 | GET | `/fundings?page&pageSize` | signed-in user | own funding history |
 | GET | `/fundings/{id}` | funding owner | one funding, used by the return page |
 | POST | `/fundings/{id}/sync` | funding owner | ask Stripe for the current session state |
-| POST | `/webhooks/stripe` | anonymous, signature only | provider notifications |
+| POST | `/fundings/{id}/mock-complete` | funding owner | complete the mock payment as `succeeded`, `failed`, or `cancelled` |
 
 ### Creating a funding
 
@@ -224,17 +225,16 @@ FundingListResponse(IReadOnlyList<FundingResponse> Items, int Page, int PageSize
 
 | Situation | Status | Body |
 | --- | --- | --- |
-| Not signed in | 401 | problem |
-| Signed in, not the project owner | 403 | "Only the maintainer who registered this project can read its balance." |
+| Not signed in | 401 | problem, for the funding endpoints. Balance reads are public |
 | Unknown project or funding | 404 | problem |
 | Amount missing, not an integer, below min, above max | 400 | validation problem keyed `amountMinor` |
 | Project id missing or malformed | 400 | validation problem keyed `projectId` |
 | A pending funding already exists with a different amount | 409 | "Finish or wait for your pending funding." |
 | Sync requested for a funding that is not pending | 200 | current state, no work |
-| Stripe not configured | 503 | "Payments are not configured." |
-| Stripe unreachable while creating a session | 502 | "The payment provider is unavailable." |
-| Bad webhook signature or missing header | 400 | `{"error":"invalid signature"}` |
-| Webhook processed, ignored, or unmatched | 200 | `{"received":true}` |
+| Payments not configured | 503 | "Payments are not configured." |
+| Provider unreachable while creating a session | 502 | "The payment provider is unavailable." |
+| Mock completion for a funding that is not pending | 200 | current state, no work |
+| Another user completes someone else's funding | 403 | problem |
 | Webhook could not be processed due to a transient failure | 500 | so Stripe retries |
 
 ## 9. The credit operation
@@ -307,9 +307,9 @@ the same spirit as `FakeGitHubRepositoryClient`.
 
 ## 11. Authorization
 
-- `Project.OwnerUserId` is the only definition of a maintainer.
-- Balance and transaction endpoints require that match, otherwise 403. A project that does not
-  exist is 404, checked first.
+- `Project.OwnerUserId` is the only definition of a maintainer, and it gates project mutation
+  (delete and refresh), not reading.
+- Balance and transaction endpoints are public. A project that does not exist is 404.
 - `POST /fundings` requires a signed-in user. Any user may fund any project, including their own.
   The maintainer relationship is not required.
 - Funding reads require `SponsorUserId == current user`.
@@ -361,8 +361,8 @@ it can be argued with.
 - A "Fund this project" panel for any signed-in user: amount field, review step showing the
   project name and amount, then `POST /fundings` and a redirect to `checkoutUrl`. Signed-out
   visitors see a "Sign in to fund" link instead.
-- For the owner, a "Balance" panel: amount in USD, then the transaction table (date, description,
-  amount, type). Empty state when there are no transactions.
+- A "Balance" panel for every visitor: amount in USD, then the transaction table (date,
+  description, amount, type). Empty state when there are no transactions.
 
 ### New routes
 
@@ -409,7 +409,7 @@ CLI prints the webhook secret for that session.
 
 ### Integration, InMemory, existing factory pattern
 
-- Balance requires the owner (403), unknown project is 404, non-owner is 403.
+- Balance reads are public: anonymous and non-owner both get 200, unknown project is 404.
 - Transaction list is newest first and paginated.
 - `POST /fundings` validates the project and amount, returns 201, and calls the fake provider with
   the exact amount, currency, and idempotency key.
@@ -500,8 +500,8 @@ US-20. This table is the trace from each story to the design and to the test tha
 | Story | Where it is designed | Test |
 | --- | --- | --- |
 | US-10 balance per project | 7, 17 | balance created on registration, backfill, unique ProjectId |
-| US-11 view balance | 8, 11 | owner 200, non-owner 403, unknown 404 |
-| US-12 transaction history | 7, 8 | newest first, paginated, owner only, one per credit |
+| US-11 view balance | 8, 11 | anonymous 200, non-owner 200, unknown 404 |
+| US-12 transaction history | 7, 8 | newest first, paginated, public, one per credit |
 | US-13 choose project and amount | 6, 8 | validation bounds, 409 pending rule, created response |
 | US-14 external payment | 8, 13, 15 | fake provider captures amount, currency, idempotency key, URLs |
 | US-15 receive webhooks | 10 | unknown event, unmatched session, 200 protocol |

@@ -1,5 +1,6 @@
 dist/
 node_modules/
+apps/web/src/routeTree.gen.ts
 .turbo/
 coverage/
 pnpm-lock.yaml

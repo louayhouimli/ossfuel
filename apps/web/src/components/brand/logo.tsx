@@ -31,11 +31,7 @@ type LogoProps = {
   className?: string
 }
 
-export function Logo({
-  size = 32,
-  showWordmark = true,
-  className,
-}: LogoProps) {
+export function Logo({ size = 32, showWordmark = true, className }: LogoProps) {
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <LogoMark size={size} />
