@@ -36,9 +36,19 @@ The repository currently contains:
 - Sponsor funding flow with checkout sessions, cancellation, and resumption
 - ASP.NET Core API with vertical slice architecture and PostgreSQL database
 - React and TypeScript web frontend (Vite, TanStack Router)
-- Unit and integration test suites (98 automated tests)
+- Unit and integration test suites (103 automated tests)
 
 The AI gateway (OpenRouter proxy, API keys), token usage tracking, and maintainer analytics dashboard are planned for the upcoming sprints.
+
+## Screenshots
+
+| Landing Page | Project Directory |
+| :---: | :---: |
+| ![OSSFuel Landing](docs/assets/home.png) | ![Project Catalog](docs/assets/projects.png) |
+
+| Project & AI Balance | Authentication |
+| :---: | :---: |
+| ![Project Detail & Funding](docs/assets/project-detail.png) | ![Sign In](docs/assets/sign-in.png) |
 
 ## Tech stack
 
