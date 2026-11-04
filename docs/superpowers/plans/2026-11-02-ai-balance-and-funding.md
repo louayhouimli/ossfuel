@@ -54,7 +54,7 @@ The spec does not enumerate these, and a reasonable person would expect them to 
 - Consumes: `Project.Id` from `Project.Register(GitHubRepository, Guid, DateTimeOffset)`.
 - Produces: `AIBalance.Open(Guid projectId, DateTimeOffset now) -> AIBalance`; `AIBalance.Credit(long amountMinor, Guid fundingId, string? description, DateTimeOffset now) -> BalanceTransaction`; `Money.Currency == "usd"`; `FundingCreditType == "funding_credit"`.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 ```csharp
 // apps/api/OSSFuel.UnitTests/Features/Balances/AIBalanceTests.cs
@@ -99,12 +99,12 @@ public class AIBalanceTests
 }
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 Run: `dotnet test apps/api/OSSFuel.UnitTests/OSSFuel.UnitTests.csproj -c Release --filter "FullyQualifiedName~AIBalanceTests"`
 Expected: build error, `AIBalance` does not exist.
 
-- [ ] **Step 3: Implement the entities**
+- [x] **Step 3: Implement the entities**
 
 `Money.cs`: `public static class Money { public const string Currency = "usd"; }`.
 
@@ -116,11 +116,11 @@ Expected: build error, `AIBalance` does not exist.
 
 `OSSFuelDbContext.cs`: add `public DbSet<AIBalance> AIBalances => Set<AIBalance>();`.
 
-- [ ] **Step 4: Run the unit test and confirm it passes**
+- [x] **Step 4: Run the unit test and confirm it passes**
 
 Run the Step 2 command. Expected: 4 passed.
 
-- [ ] **Step 5: Write the failing integration test**
+- [x] **Step 5: Write the failing integration test**
 
 ```csharp
 // apps/api/OSSFuel.IntegrationTests/Features/Balances/BalanceCreationTests.cs
@@ -177,12 +177,12 @@ public Guid SeedCredit(Guid projectId, long amountMinor, string? description = "
 }
 ```
 
-- [ ] **Step 6: Run it and confirm it fails**
+- [x] **Step 6: Run it and confirm it fails**
 
 Run: `dotnet test apps/api/OSSFuel.IntegrationTests/OSSFuel.IntegrationTests.csproj -c Release --filter "FullyQualifiedName~BalanceCreationTests"`
 Expected: one balance found is 0, because registration does not create one yet.
 
-- [ ] **Step 7: Create the balance during registration**
+- [x] **Step 7: Create the balance during registration**
 
 In `CreateProjectAsync`, after `var project = Project.Register(...)`, add:
 
@@ -194,11 +194,11 @@ db.AIBalances.Add(AIBalance.Open(project.Id, now));
 try { await db.SaveChangesAsync(cancellationToken); }
 ```
 
-- [ ] **Step 8: Run both test files and confirm they pass**
+- [x] **Step 8: Run both test files and confirm they pass**
 
 Run the Step 6 command, then the Step 2 command. Expected: all green.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add apps/api/OSSFuel.Api/Features/Balances apps/api/OSSFuel.Api/Database/OSSFuelDbContext.cs apps/api/OSSFuel.Api/Features/Projects/ProjectEndpoints.cs apps/api/OSSFuel.UnitTests/Features/Balances apps/api/OSSFuel.IntegrationTests/Features/Balances apps/api/OSSFuel.IntegrationTests/Infrastructure
@@ -221,7 +221,7 @@ git commit -m "feat(api): open an AI balance with every project"
 - Consumes: `AIBalance`, `BalanceTransaction`.
 - Produces: `BalanceResponse(Guid ProjectId, long AmountMinor, string Currency)`, `BalanceTransactionResponse(Guid Id, long AmountMinor, string Type, string Status, string? Description, DateTimeOffset CreatedAt)`, `BalanceTransactionListResponse(IReadOnlyList<BalanceTransactionResponse> Items, int Page, int PageSize, int TotalCount)`; `MapBalanceEndpoints(this IEndpointRouteBuilder)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```csharp
 // BalanceAccessTests.cs
@@ -300,12 +300,12 @@ public async Task Anyone_reads_the_history()
 Add `private sealed record BalancePayload(Guid ProjectId, long AmountMinor, string Currency);` inside each file.
 `factory.SeedCredit` and `factory.SeedProject`'s zero balance come from Task 1.
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
 Run: `dotnet test apps/api/OSSFuel.IntegrationTests/OSSFuel.IntegrationTests.csproj -c Release --filter "FullyQualifiedName~BalanceAccessTests|FullyQualifiedName~BalanceTransactionTests"`
 Expected: 404, because no route exists.
 
-- [ ] **Step 3: Implement the endpoints**
+- [x] **Step 3: Implement the endpoints**
 
 Both routes are public project information: no `RequireAuthorization`, no current-user lookup, no owner check.
 
@@ -317,11 +317,11 @@ Add `DbSet<BalanceTransaction> BalanceTransactions` to `OSSFuelDbContext`: Task 
 
 Register in `Program.cs`: `app.MapBalanceEndpoints();` after `app.MapProjectEndpoints();`.
 
-- [ ] **Step 4: Run them and confirm they pass**
+- [x] **Step 4: Run them and confirm they pass**
 
 Run the Step 2 command. Expected: all green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -am "feat(api): expose the project balance and transaction history"
@@ -343,7 +343,7 @@ git commit -am "feat(api): expose the project balance and transaction history"
 **Interfaces:**
 - Produces: `enum FundingStatus { Pending, Succeeded, Failed, Cancelled }`; `Funding.Create(Guid projectId, Guid sponsorUserId, long amountMinor, DateTimeOffset now) -> Funding`; `MarkCheckoutCreated(string sessionId, string checkoutUrl, DateTimeOffset now)`; `MarkSucceeded(string? paymentIntentId, DateTimeOffset now)`; `MarkFailed(string reason, DateTimeOffset now)`; `MarkCancelled(string reason, DateTimeOffset now)`; `bool CanTransitionTo(FundingStatus next)`.
 
-- [ ] **Step 1: Write the failing unit test**
+- [x] **Step 1: Write the failing unit test**
 
 ```csharp
 [Fact]
@@ -369,11 +369,11 @@ public void New_funding_is_pending_and_cannot_skip_to_succeeded_twice()
 public void Terminal_statuses_never_move_again(FundingStatus terminal) { /* MarkCancelled on it throws */ }
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
 Run: `dotnet test apps/api/OSSFuel.UnitTests/OSSFuel.UnitTests.csproj -c Release --filter "FullyQualifiedName~FundingTests"`
 
-- [ ] **Step 3: Implement the entity**
+- [x] **Step 3: Implement the entity**
 
 Properties from spec section 7, navigations `Project` and `Sponsor`, constant `StripeProvider = "stripe"`. `CanTransitionTo` returns true only from `Pending` to any other status. `MarkCheckoutCreated` sets the session id and URL and `UpdatedAt`. `MarkSucceeded`, `MarkFailed` and `MarkCancelled` each throw `InvalidOperationException("Funding is not pending.")` unless `Pending`; `MarkSucceeded` also sets `ProviderPaymentIntentId` and `CompletedAt`, and `MarkFailed` and `MarkCancelled` set `FailureReason`, `CompletedAt` and `UpdatedAt`.
 
@@ -387,9 +387,9 @@ builder.HasIndex(funding => new { funding.SponsorUserId, funding.ProjectId })
 
 `OSSFuelDbContext.cs`: add `DbSet<Funding>`.
 
-- [ ] **Step 4: Run the unit test and confirm it passes**
+- [x] **Step 4: Run the unit test and confirm it passes**
 
-- [ ] **Step 5: Write the failing delete-guard test**
+- [x] **Step 5: Write the failing delete-guard test**
 
 ```csharp
 [Fact]
@@ -420,11 +420,11 @@ public (Guid ProjectId, Guid FundingId, Guid SponsorId) SeedPendingFundingWithSp
 
 `SeedFunding` inserts a `pending` `Funding` and, when `checkoutSessionId` is given, calls `MarkCheckoutCreated(checkoutSessionId, "https://checkout.test/x", now)`. `SeedPendingFunding` creates a maintainer, a project, and a sponsor, then calls `SeedFunding` with `checkoutSessionId = $"cs_{id:N}"` and returns the ids.
 
-- [ ] **Step 6: Run it and confirm it fails**
+- [x] **Step 6: Run it and confirm it fails**
 
 Expected: 500 or 204, not 409.
 
-- [ ] **Step 7: Add the guard**
+- [x] **Step 7: Add the guard**
 
 In `DeleteProjectAsync`, after the ownership check:
 
@@ -438,9 +438,9 @@ if (await db.Fundings.AnyAsync(funding => funding.ProjectId == id, cancellationT
 }
 ```
 
-- [ ] **Step 8: Run the task's tests and confirm they pass**
+- [x] **Step 8: Run the task's tests and confirm they pass**
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git commit -am "feat(api): add funding records and protect funded projects from deletion"
@@ -462,7 +462,7 @@ git commit -am "feat(api): add funding records and protect funded projects from 
 **Interfaces:**
 - Produces: `enum PaymentAction { Credit, Fail, Cancel, Ignore }`; `sealed record PaymentNotification(string EventId, string Type, string ObjectId, long AmountMinor, string Currency, string? PaymentIntentId, PaymentAction Action)`; `sealed record ProviderSession(string SessionId, string CheckoutUrl)`; `sealed record CheckoutSessionSnapshot(string Status, string PaymentStatus, long AmountMinor, string Currency, string? PaymentIntentId)`; `interface IPaymentProvider { bool IsConfigured { get; } Task<ProviderSession> CreateCheckoutSessionAsync(Funding funding, CancellationToken ct); Task<CheckoutSessionSnapshot> GetCheckoutSessionAsync(string sessionId, CancellationToken ct); PaymentNotification? VerifyWebhook(string body, string signature); }`; `CreateFundingRequest(Guid ProjectId, long AmountMinor)`; `FundingResponse(...)`; `MapFundingEndpoints(this IEndpointRouteBuilder)`.
 
-- [ ] **Step 1: Define the provider types, then write the fake**
+- [x] **Step 1: Define the provider types, then write the fake**
 
 The fake cannot compile before the interface exists, so define the types from the Interfaces block first (interface plus the three records and the enum, no implementations), then write the fake below.
 
@@ -495,7 +495,7 @@ public sealed class FakePaymentProvider : IPaymentProvider
 }
 ```
 
-- [ ] **Step 2: Write the failing create tests**
+- [x] **Step 2: Write the failing create tests**
 
 ```csharp
 [Fact]
@@ -554,9 +554,9 @@ public async Task An_unknown_project_is_not_found() { /* 404 */ }
 
 `ProjectsWebApplicationFactory` gains `public FakePaymentProvider Payments { get; } = new();` and, inside its existing `ConfigureTestServices`, replaces `IPaymentProvider` with it. Every integration test then shares one factory, InMemory by default.
 
-- [ ] **Step 3: Run them and confirm they fail**
+- [x] **Step 3: Run them and confirm they fail**
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `FundingOptions { long MinAmountMinor = 100; long MaxAmountMinor = 1_000_000; }`, bound from section `Funding` and registered in `Program.cs`.
 
@@ -581,9 +581,9 @@ maps the entity and supplies `checkoutUrl` only when asked. The client-facing `s
 
 `MapFundingEndpoints` registers only `POST /fundings` in this task.
 
-- [ ] **Step 5: Run and confirm they pass**
+- [x] **Step 5: Run and confirm they pass**
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -am "feat(api): create sponsor funding and open a checkout session"
@@ -606,7 +606,7 @@ git commit -am "feat(api): create sponsor funding and open a checkout session"
 **Interfaces:**
 - Produces: `enum PaymentOutcome { Credited, Duplicate, Ignored, Rejected, Unmatched, Failed, Cancelled }`; `PaymentEvent` entity; `Task<PaymentOutcome> FundingCreditService.ApplyAsync(PaymentNotification notification, CancellationToken ct)`; `static PaymentAction PaymentActionMapping.Decide(string type, string? paymentStatus)`.
 
-- [ ] **Step 1: Write the failing mapping test**
+- [x] **Step 1: Write the failing mapping test**
 
 ```csharp
 [Theory]
@@ -622,13 +622,13 @@ public void Maps_stripe_events(string type, string? paymentStatus, PaymentAction
 }
 ```
 
-- [ ] **Step 2: Run it and confirm it fails**
+- [x] **Step 2: Run it and confirm it fails**
 
-- [ ] **Step 3: Implement the mapping and the entity**
+- [x] **Step 3: Implement the mapping and the entity**
 
 `PaymentActionMapping.Decide` is a pure switch, no service, no dependencies. `PaymentEvent` holds the fields from spec section 7. `PaymentEventConfiguration`: key, unique index on `ProviderEventId`, `Outcome` stored as its lowercase name, `Type` max 100, `Detail` max 500.
 
-- [ ] **Step 4: Write the failing service tests**
+- [x] **Step 4: Write the failing service tests**
 
 ```csharp
 [Fact]
@@ -697,9 +697,9 @@ internal static class Notification
 
 Payload records stay private inside each test file, as the existing tests do.
 
-- [ ] **Step 5: Run them and confirm they fail**
+- [x] **Step 5: Run them and confirm they fail**
 
-- [ ] **Step 6: Implement `FundingCreditService`**
+- [x] **Step 6: Implement `FundingCreditService`**
 
 ```csharp
 public async Task<PaymentOutcome> ApplyAsync(PaymentNotification notification, CancellationToken ct)
@@ -720,9 +720,9 @@ public async Task<PaymentOutcome> ApplyAsync(PaymentNotification notification, C
 
 Register `FundingCreditService` as scoped in `Program.cs`.
 
-- [ ] **Step 7: Run and confirm they pass**
+- [x] **Step 7: Run and confirm they pass**
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git commit -am "feat(api): credit a balance exactly once per verified payment"
@@ -741,7 +741,7 @@ git commit -am "feat(api): credit a balance exactly once per verified payment"
 - Consumes: `IPaymentProvider.VerifyWebhook`, `FundingCreditService.ApplyAsync`.
 - Produces: `MapWebhookEndpoints(this IEndpointRouteBuilder)`; route `POST /webhooks/stripe`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```csharp
 [Fact]
@@ -788,9 +788,9 @@ public async Task An_expired_event_cancels_without_crediting() { /* Cancel actio
 public async Task An_unconfigured_provider_returns_503() { /* IsConfigured = false */ }
 ```
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
-- [ ] **Step 3: Implement the endpoint**
+- [x] **Step 3: Implement the endpoint**
 
 ```csharp
 private static async Task<IResult> HandleStripeWebhookAsync(
@@ -819,9 +819,9 @@ Register `app.MapWebhookEndpoints();` in `Program.cs`. Exceptions that reach the
 
 In the test file, add `private static StringContent JsonContent(string body, string? signature = null)` that sets `Stripe-Signature` when a value is given.
 
-- [ ] **Step 4: Run and confirm they pass**
+- [x] **Step 4: Run and confirm they pass**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -am "feat(api): receive and verify payment provider webhooks"
@@ -839,7 +839,7 @@ git commit -am "feat(api): receive and verify payment provider webhooks"
 - Consumes: `IPaymentProvider.GetCheckoutSessionAsync`, `FundingCreditService.ApplyAsync`.
 - Produces: route `POST /fundings/{id}/sync`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```csharp
 [Fact]
@@ -864,15 +864,15 @@ public async Task Sync_for_another_user_is_forbidden() { /* 403 */ }
 public async Task Sync_for_an_unpaid_session_changes_nothing() { /* status open -> still pending, balance 0 */ }
 ```
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Load the user, then the funding with `Project`. 404 when missing, 403 when `SponsorUserId != user.Id`, return the current funding when not `pending`. Otherwise call `GetCheckoutSessionAsync(funding.ProviderCheckoutSessionId!)`, build a `PaymentNotification` with `EventId = $"sync:{funding.Id}:{now:O}"`, `Type = "checkout.session.sync"`, `ObjectId = sessionId`, the snapshot's amount, currency and payment intent, and `Action = PaymentActionMapping.Decide(snapshotStatus == "complete" ? "checkout.session.completed" : "", snapshot.PaymentStatus)`; then `ApplyAsync` and return the reloaded funding.
 
-- [ ] **Step 4: Run and confirm they pass**
+- [x] **Step 4: Run and confirm they pass**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -am "feat(api): allow a sponsor to resynchronise a pending funding"
@@ -891,7 +891,7 @@ git commit -am "feat(api): allow a sponsor to resynchronise a pending funding"
 **Interfaces:**
 - Produces: `GET /fundings?page&pageSize`, `GET /fundings/{id}`, `FundingListResponse`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```csharp
 [Fact]
@@ -918,15 +918,15 @@ public async Task Every_status_is_represented()
 
 The index on `(SponsorUserId, CreatedAt)` is configured in Task 3.
 
-- [ ] **Step 2: Run them and confirm they fail**
+- [x] **Step 2: Run them and confirm they fail**
 
-- [ ] **Step 3: Implement the two GET routes**
+- [x] **Step 3: Implement the two GET routes**
 
 List: filter by `SponsorUserId`, `OrderByDescending(f => f.CreatedAt)`, `Include(f => f.Project)`, page and size clamped as in Task 2, and map through `FundingResponse` with `CheckoutUrl = null`. Single: owner-only, 403 for anyone else.
 
-- [ ] **Step 4: Run and confirm they pass**
+- [x] **Step 4: Run and confirm they pass**
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -am "feat(api): expose a sponsor's funding history"
@@ -948,16 +948,16 @@ git commit -am "feat(api): expose a sponsor's funding history"
 - Consumes: `IPaymentProvider`, `PaymentActionMapping`.
 - Produces: `AddPaymentFeature(this IServiceCollection, IConfiguration)`.
 
-- [ ] **Step 1: Add the package**
+- [x] **Step 1: Add the package**
 
 Run: `dotnet add apps/api/OSSFuel.Api/OSSFuel.Api.csproj package Stripe.net`
 Expected: the latest stable version is added to the csproj. Record the resolved version in the commit message.
 
-- [ ] **Step 2: Implement `StripePaymentProvider`**
+- [x] **Step 2: Implement `StripePaymentProvider`**
 
 Hold a nullable `StripeClient` built only when `Stripe:SecretKey` is non-empty, and the webhook secret string. `IsConfigured` is true when both exist. `CreateCheckoutSessionAsync` builds a session with `Mode = "payment"`, `ClientReferenceId = funding.Id.ToString()`, `SuccessUrl = $"{webAppUrl}/fundings/{funding.Id}"`, `CancelUrl = $"{webAppUrl}/projects/{funding.ProjectId}"`, one line item in `usd` with `UnitAmount = funding.AmountMinor`, and `RequestOptions { IdempotencyKey = funding.Id.ToString() }`. `GetCheckoutSessionAsync` retrieves the session and maps to `CheckoutSessionSnapshot`. `VerifyWebhook` calls `EventUtility.ConstructEvent(body, signature, webhookSecret)` and maps to `PaymentNotification` using `PaymentActionMapping.Decide(eventType, session.PaymentStatus)`.
 
-- [ ] **Step 3: Write the failing test for the extra mapping case**
+- [x] **Step 3: Write the failing test for the extra mapping case**
 
 ```csharp
 [InlineData("checkout.session.sync", "paid", PaymentAction.Ignore)]
@@ -965,16 +965,16 @@ Hold a nullable `StripeClient` built only when `Stripe:SecretKey` is non-empty, 
 
 Sync sets its own action, so this pins that an unknown type defaults to `Ignore` rather than `Credit`.
 
-- [ ] **Step 4: Implement `StripeSetup` and wire it**
+- [x] **Step 4: Implement `StripeSetup` and wire it**
 
 Read `Stripe:SecretKey`, `Stripe:WebhookSecret`, and the existing `WebAppUrl`. Register `IPaymentProvider` as a singleton with the resolved values. Replace the Task 4 placeholder registration. Add empty `Stripe` keys and the `Funding` bounds to `appsettings.json` with no secret values.
 
-- [ ] **Step 5: Run the full API suite and confirm nothing regressed**
+- [x] **Step 5: Run the full API suite and confirm nothing regressed**
 
 Run: `dotnet test apps/api/api.slnx -c Release`
 Expected: all tests pass, including the fake-provider tests, because the test factories replace `IPaymentProvider`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -am "feat(api): add the Stripe payment adapter"
@@ -992,18 +992,18 @@ git commit -am "feat(api): add the Stripe payment adapter"
 **Interfaces:**
 - Produces: tables `AIBalances`, `BalanceTransactions`, `Fundings`, `PaymentEvents`, all indexes, and one zero balance per existing project.
 
-- [ ] **Step 1: Generate the migration**
+- [x] **Step 1: Generate the migration**
 
 If the tool is missing, run `dotnet tool install --global dotnet-ef` first.
 
 Run from the repo root: `dotnet ef migrations add AddAiBalancesAndFunding --project apps/api/OSSFuel.Api --startup-project apps/api/OSSFuel.Api`
 Expected: three files appear. No database connection is needed.
 
-- [ ] **Step 2: Inspect the generated file**
+- [x] **Step 2: Inspect the generated file**
 
 Check that `AIBalances` has no `RowVersion` column (it maps to the `xmin` system column), that the unique indexes exist, and that the partial index filter reads `"Status" = 'pending'`. If the model produced a `RowVersion` column, switch the property to Npgsql's `UseXminAsConcurrencyToken` and regenerate.
 
-- [ ] **Step 3: Append the backfill**
+- [x] **Step 3: Append the backfill**
 
 At the end of `Up`, before the closing brace:
 
@@ -1014,17 +1014,17 @@ migrationBuilder.Sql("""
     """);
 ```
 
-- [ ] **Step 4: Apply it to the dev database and confirm the data**
+- [x] **Step 4: Apply it to the dev database and confirm the data**
 
 Run: `$env:Database__MigrateOnStartup="true"; dotnet run --project apps/api/OSSFuel.Api --configuration Release` against the compose database, or `dotnet ef database update --project apps/api/OSSFuel.Api`.
 Then: `docker exec ossfuel-postgres psql -U ossfuel -d ossfuel -c "select count(*) from \"AIBalances\"; select count(*) from \"Projects\";"` and confirm the counts match.
 
-- [ ] **Step 5: Run the full suite**
+- [x] **Step 5: Run the full suite**
 
 Run: `dotnet test apps/api/api.slnx -c Release`
 Expected: all pass. The InMemory tests ignore the migration.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/api/OSSFuel.Api/Migrations
@@ -1047,7 +1047,7 @@ git commit -m "feat(api): migrate balances, funding and payment events"
 **Interfaces:**
 - Produces: `PostgresDatabase.CreateAsync() -> Task<PostgresDatabase>` exposing `ConnectionString`; `PostgresFundingWebApplicationFactory` with the same seeding helpers as the InMemory factory.
 
-- [ ] **Step 1: Add the init script and compose mount**
+- [x] **Step 1: Add the init script and compose mount**
 
 ```sql
 -- docker/init/01-test-database.sql
@@ -1063,7 +1063,7 @@ CREATE DATABASE ossfuel_tests;
 
 Note in the commit that an existing volume does not re-run init scripts; `docker compose down -v` is the reset.
 
-- [ ] **Step 2: Write the failing concurrency test**
+- [x] **Step 2: Write the failing concurrency test**
 
 ```csharp
 [Trait("Category", "Postgres")]
@@ -1106,16 +1106,16 @@ public sealed class FundingConcurrencyTests : IAsyncLifetime
 
 `ApplyPaymentAsync` opens its own scope per call, so the two tasks really do race on separate `DbContext` instances.
 
-- [ ] **Step 3: Run it and confirm it fails**
+- [x] **Step 3: Run it and confirm it fails**
 
 Run: `docker compose up -d`, then `dotnet test apps/api/OSSFuel.IntegrationTests/OSSFuel.IntegrationTests.csproj -c Release --filter "FullyQualifiedName~FundingConcurrencyTests"`
 Expected: fails because the fixture does not exist.
 
-- [ ] **Step 4: Implement `PostgresDatabase`**
+- [x] **Step 4: Implement `PostgresDatabase`**
 
 Read `Database:TestConnectionString`, defaulting to `Host=localhost;Port=5432;Database=ossfuel_tests;Username=ossfuel;Password=ossfuel_dev`. On first use, open a connection and run `CREATE SCHEMA IF NOT EXISTS "<unique>"`; store the connection string with `Search Path=<unique>`; dispose with `DROP SCHEMA "<unique>" CASCADE`. When the connection fails, throw with the message `Postgres is not reachable at <connection string>. Start it with 'docker compose up -d'.`
 
-- [ ] **Step 5: Implement the Postgres factory**
+- [x] **Step 5: Implement the Postgres factory**
 
 Extract the shared half of `ProjectsWebApplicationFactory` into `public abstract class OssFuelWebApplicationFactory : WebApplicationFactory<Program>`. It owns the settings, the test auth scheme, `GitHub`, `Payments`, the seeding helpers, and `ReadDb`, and declares one hook:
 
@@ -1129,11 +1129,11 @@ protected abstract void ConfigureDatabase(IServiceCollection services);
 
 After the extraction, rerun the entire API suite before adding the concurrency tests.
 
-- [ ] **Step 6: Run and confirm it passes**
+- [x] **Step 6: Run and confirm it passes**
 
 Run the Step 3 command, then `dotnet test apps/api/api.slnx -c Release`.
 
-- [ ] **Step 7: Add the CI service**
+- [x] **Step 7: Add the CI service**
 
 In `.github/workflows/pr.yml`, under the `api` job:
 
@@ -1152,7 +1152,7 @@ In `.github/workflows/pr.yml`, under the `api` job:
       Database__TestConnectionString: Host=localhost;Port=5432;Database=ossfuel_tests;Username=ossfuel;Password=ossfuel_dev
 ```
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add apps/api/OSSFuel.IntegrationTests docker docker-compose.yml .github/workflows/pr.yml
@@ -1171,7 +1171,7 @@ git commit -m "test(api): prove the credit guarantees on real postgres"
 **Interfaces:**
 - Produces: `type Funding`, `parseAmountMinor(value: string): number | null`, `formatMinor(amountMinor: number, currency: string): string`, `createFunding(projectId: string, amountMinor: number): Promise<Funding>`, `fundingQueryOptions(id: string)`, `fundingsQueryOptions(page: number)`.
 
-- [ ] **Step 1: Write the lib**
+- [x] **Step 1: Write the lib**
 
 ```ts
 export function parseAmountMinor(value: string): number | null {
@@ -1190,24 +1190,24 @@ export function formatMinor(amountMinor: number, currency: string): string {
 
 `/ 100` at the display edge only. Add the fetch functions with `apiFetch`.
 
-- [ ] **Step 2: Add the balance panel**
+- [x] **Step 2: Add the balance panel**
 
 For every visitor, above the fund panel: the amount from `GET /projects/{id}/balance` with `formatMinor`, then the transaction list from `GET /projects/{id}/balance/transactions` with `LiveTime` for the date and a signed amount. Empty state text: "No transactions yet." Loading uses `Loader`.
 
-- [ ] **Step 3: Add the fund panel**
+- [x] **Step 3: Add the fund panel**
 
 Signed-in: an amount input, a review line showing the project name and the parsed amount, and a button that calls `createFunding` and sets `window.location.assign(checkoutUrl)`. Invalid input disables the button and shows "Enter an amount between $1 and $10,000." A 409 shows the API message. Signed out: a "Sign in to fund" link to `/sign-in`.
 
-- [ ] **Step 4: Verify by hand**
+- [x] **Step 4: Verify by hand**
 
 Run the dev servers, open a project, and check: `25.50` produces `checkout.test` redirect, `0.10` is accepted, `0.001` and `abc` are rejected, the review line matches, and the console has no errors. Screenshot desktop and mobile.
 
-- [ ] **Step 5: Format, lint, typecheck, build**
+- [x] **Step 5: Format, lint, typecheck, build**
 
 Run: `pnpm exec prettier --write apps/web/src/lib/funding.ts "apps/web/src/routes/_site/projects/$projectId.tsx"; pnpm --filter web lint; pnpm --filter web typecheck; pnpm --filter web build`
 Expected: all exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -am "feat(web): fund a project and show its balance"
@@ -1226,27 +1226,27 @@ git commit -am "feat(web): fund a project and show its balance"
 **Interfaces:**
 - Consumes: `fundingsQueryOptions`, `fundingQueryOptions`, `parseAmountMinor` is not needed here.
 
-- [ ] **Step 1: Build the history page**
+- [x] **Step 1: Build the history page**
 
 A table with project, amount, status, and created date, newest first, paginated with the same controls as the projects list. Status shown as text with the same border chip styling used by topics. Empty state: "You have not funded a project yet." with a link to `/projects`.
 
-- [ ] **Step 2: Build the return page**
+- [x] **Step 2: Build the return page**
 
 Poll `GET /fundings/{id}` every 2 seconds while `pending`, stop after 60 seconds or on unmount. At ten seconds call `POST /fundings/{id}/sync` once. `pending` shows "Payment submitted, waiting for confirmation". The other statuses show a plain sentence and a link back to the project. A 404 shows "Funding not found".
 
-- [ ] **Step 3: Add the header link**
+- [x] **Step 3: Add the header link**
 
 In `site-header.tsx`, add "Funding" to the signed-in navigation, next to the existing project links.
 
-- [ ] **Step 4: Verify by hand**
+- [x] **Step 4: Verify by hand**
 
 With the fake provider or Stripe test mode: create a funding, land on the return page, watch it poll, run the webhook manually with the Stripe CLI, and confirm the page flips to succeeded and the balance and history both update. Screenshot the pending and succeeded states.
 
-- [ ] **Step 5: Format, lint, typecheck, build**
+- [x] **Step 5: Format, lint, typecheck, build**
 
 Expected: all exit 0, and `routeTree.gen.ts` now contains the two new routes.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -am "feat(web): add funding history and the payment return page"
@@ -1258,22 +1258,48 @@ git commit -am "feat(web): add funding history and the payment return page"
 
 **Files:** none.
 
-- [ ] **Step 1: Configure test keys**
+- [x] **Step 1: Configure test keys**
 
 Set `Stripe:SecretKey` and `Stripe:WebhookSecret` through user secrets, start `stripe listen --forward-to localhost:5050/webhooks/stripe`, and copy the `whsec_` value it prints.
 
-- [ ] **Step 2: Run the flow**
+- [x] **Step 2: Run the flow**
 
 Start the API and web. Sign in, open a project, fund $5.00, pay with `4242 4242 4242 4242`, and land on the return page. Confirm the page reaches `succeeded`, the project page shows $5.00 and one transaction to a signed-out visitor too, and `/fundings` lists it.
 
-- [ ] **Step 3: Prove the failure paths**
+- [x] **Step 3: Prove the failure paths**
 
 Pay with `4000 0000 0000 0002` and confirm the funding lands `failed`, the balance stays put, and no transaction exists. Use `stripe trigger checkout.session.expired` and confirm a pending funding becomes `cancelled`.
 
-- [ ] **Step 4: Prove idempotency**
+- [x] **Step 4: Prove idempotency**
 
 In the Stripe CLI, re-send the last successful event with `stripe events resend <id>` and confirm the balance and transaction count do not change.
 
-- [ ] **Step 5: Record the result**
+- [x] **Step 5: Record the result**
 
 Append the commands you ran and the outcomes to the PR description. Do not claim the flow works without this evidence.
+
+
+---
+
+### Task 15: Post-Implementation Refinements & Fixes
+
+**Files:**
+- Modify: `apps/api/OSSFuel.Api/Features/Balances/AIBalance.cs`
+- Modify: `apps/api/OSSFuel.Api/Features/Funding/Funding.cs`
+- Modify: `apps/api/OSSFuel.Api/Features/Funding/FundingCreditService.cs`
+- Modify: `apps/api/OSSFuel.Api/Features/Funding/FundingEndpoints.cs`
+- Modify: `apps/api/OSSFuel.Api/Features/Funding/FundingSetup.cs`
+- Modify: `apps/api/OSSFuel.Api/Features/Funding/PaymentNotification.cs`
+- Modify: `apps/api/OSSFuel.Api/Program.cs`
+- Modify: `apps/api/OSSFuel.IntegrationTests/Features/Funding/FundingCreationTests.cs`
+- Modify: `apps/web/src/lib/funding.ts`
+- Modify: `apps/web/src/routes/_site/_authenticated/fundings/$fundingId.tsx`
+
+**Steps:**
+- [x] Enforce domain model encapsulation with `{ get; private set; }` and `{ get; init; }` on `AIBalance` and `Funding`.
+- [x] Fix `includeCheckoutUrl: true` in `FundingEndpoints.CreateFundingAsync` when reusing an existing pending funding.
+- [x] Implement `POST /fundings/{id}/cancel` endpoint allowing sponsors to cancel pending checkout sessions.
+- [x] Add "Cancel this payment" button to the frontend return page at `/fundings/$fundingId`.
+- [x] Add dynamic `Provider` auditing to `PaymentNotification` and `FundingCreditService` instead of hardcoding `mock`.
+- [x] Resolve ASP.NET Core 10 deprecated `ForwardedHeadersOptions.KnownNetworks` warning by migrating to `KnownIPNetworks`.
+- [x] Add integration tests in `FundingCreationTests.cs` verifying checkout URL resumption and cancellation flow (84/84 integration tests passing).
