@@ -54,10 +54,11 @@ app.UseStatusCodePages();
 app.UseHttpsRedirection();
 
 app.UseCors(CorsSetup.Web);
-app.UseRateLimiter();
+
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.UseCsrfProtection();
 
 await app.MigrateDatabaseAsync();

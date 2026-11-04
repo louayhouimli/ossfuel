@@ -189,7 +189,7 @@ public static class FundingEndpoints
         }
 
         return funding.SponsorUserId == user.Id
-            ? Results.Ok(ToResponse(funding, funding.Project.FullName))
+            ? Results.Ok(ToResponse(funding, funding.Project.FullName, includeCheckoutUrl: funding.Status == FundingStatus.Pending))
             : NotPermittedProblem();
     }
 

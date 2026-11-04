@@ -68,7 +68,7 @@ public class FundingHistoryTests : IDisposable
         Assert.Equal(fundingId, payload!.Id);
         Assert.Equal("pending", payload.Status);
         Assert.Equal(2500, payload.AmountMinor);
-        Assert.Null(payload.CheckoutUrl);
+        Assert.Equal($"https://payments.test/checkout/{fundingId}", payload.CheckoutUrl);
     }
 
     [Fact]

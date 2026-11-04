@@ -71,7 +71,7 @@ public static class ProjectEndpoints
         OSSFuelDbContext db,
         CancellationToken cancellationToken)
     {
-        var user = await LoadCurrentUserAsync(principal, db, cancellationToken);
+        var user = await CurrentUser.LoadAsync(principal, db, cancellationToken);
 
         if (user is null)
         {
@@ -112,7 +112,7 @@ public static class ProjectEndpoints
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
-        var user = await LoadCurrentUserAsync(principal, db, cancellationToken);
+        var user = await CurrentUser.LoadAsync(principal, db, cancellationToken);
 
         if (user is null)
         {
@@ -181,7 +181,7 @@ public static class ProjectEndpoints
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
-        var user = await LoadCurrentUserAsync(principal, db, cancellationToken);
+        var user = await CurrentUser.LoadAsync(principal, db, cancellationToken);
 
         if (user is null)
         {
@@ -242,7 +242,7 @@ public static class ProjectEndpoints
         ILoggerFactory loggerFactory,
         CancellationToken cancellationToken)
     {
-        var user = await LoadCurrentUserAsync(principal, db, cancellationToken);
+        var user = await CurrentUser.LoadAsync(principal, db, cancellationToken);
 
         if (user is null)
         {
@@ -321,21 +321,6 @@ public static class ProjectEndpoints
         }
 
         return Results.Created($"/projects/{project.Id}", ToResponse(project));
-    }
-
-    private static async Task<User?> LoadCurrentUserAsync(
-        ClaimsPrincipal principal,
-        OSSFuelDbContext db,
-        CancellationToken cancellationToken)
-    {
-        var value = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(value, out var userId))
-        {
-            return null;
-        }
-
-        return await db.Users.FirstOrDefaultAsync(user => user.Id == userId, cancellationToken);
     }
 
     private static IResult ReconnectProblem() =>
