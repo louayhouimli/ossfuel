@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using OSSFuel.Api.Common;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Users;
 
@@ -15,7 +16,9 @@ public static class FundingEndpoints
         this IEndpointRouteBuilder app,
         bool includeMockEndpoints)
     {
-        app.MapPost("/fundings", CreateFundingAsync).RequireAuthorization();
+        app.MapPost("/fundings", CreateFundingAsync)
+            .RequireAuthorization()
+            .RequireRateLimiting(RateLimitingSetup.FundingCreatePolicy);
         app.MapGet("/fundings", GetFundingsAsync).RequireAuthorization();
         app.MapGet("/fundings/{id:guid}", GetFundingAsync).RequireAuthorization();
         app.MapPost("/fundings/{id:guid}/cancel", CancelFundingAsync).RequireAuthorization();

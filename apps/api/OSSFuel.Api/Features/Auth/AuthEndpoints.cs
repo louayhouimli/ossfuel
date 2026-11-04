@@ -2,6 +2,7 @@ using System.Security.Claims;
 using AspNet.Security.OAuth.GitHub;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using OSSFuel.Api.Common;
 using OSSFuel.Api.Database;
 
 namespace OSSFuel.Api.Features.Auth;
@@ -16,7 +17,8 @@ public static class AuthEndpoints
                 {
                     RedirectUri = ResolveRedirectUrl(returnUrl, configuration)
                 },
-                [GitHubAuthenticationDefaults.AuthenticationScheme]));
+                [GitHubAuthenticationDefaults.AuthenticationScheme]))
+            .RequireRateLimiting(RateLimitingSetup.AuthPolicy);
 
         app.MapPost("/logout", async (HttpContext httpContext) =>
         {

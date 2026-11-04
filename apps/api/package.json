@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "dotnet watch --project OSSFuel.Api",
+    "dev": "dotnet watch --project OSSFuel.Api --launch-profile http",
     "test": "dotnet test"
   },
   "keywords": [],

@@ -19,11 +19,22 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Instance =
+            $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}";
+        context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+    };
+});
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddHealthFeature();
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddAppCors(builder.Configuration);
+builder.Services.AddAppRateLimiting();
 builder.Services.AddAuthFeature(builder.Configuration);
 builder.Services.AddGitHubFeature(builder.Configuration);
 builder.Services.AddFundingFeature(builder.Configuration, builder.Environment);
@@ -37,13 +48,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseForwardedHeaders();
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 app.UseHttpsRedirection();
 
 app.UseCors(CorsSetup.Web);
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseCsrfProtection();
 
 await app.MigrateDatabaseAsync();
 
