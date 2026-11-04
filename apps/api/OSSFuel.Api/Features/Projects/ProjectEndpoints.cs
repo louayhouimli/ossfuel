@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using OSSFuel.Api.Database;
+using OSSFuel.Api.Features.Balances;
 using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Users;
 
@@ -298,8 +299,10 @@ public static class ProjectEndpoints
             return AlreadyRegisteredProblem();
         }
 
-        var project = Project.Register(repository, user.Id, DateTimeOffset.UtcNow);
+        var now = DateTimeOffset.UtcNow;
+        var project = Project.Register(repository, user.Id, now);
         db.Projects.Add(project);
+        db.AIBalances.Add(AIBalance.Open(project.Id, now));
 
         try
         {

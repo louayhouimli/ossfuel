@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OSSFuel.Api.Database;
+using OSSFuel.Api.Features.Balances;
 using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Projects;
 using OSSFuel.Api.Features.Users;
@@ -112,8 +113,26 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
         };
 
         db.Projects.Add(project);
+        db.AIBalances.Add(AIBalance.Open(project.Id, now));
         db.SaveChanges();
 
         return project.Id;
+    }
+
+    public T ReadDb<T>(Func<OSSFuelDbContext, T> read)
+    {
+        using var scope = Services.CreateScope();
+        return read(scope.ServiceProvider.GetRequiredService<OSSFuelDbContext>());
+    }
+
+    public Guid SeedCredit(Guid projectId, long amountMinor, string? description = "Funding received")
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<OSSFuelDbContext>();
+        var balance = db.AIBalances.Single(b => b.ProjectId == projectId);
+        balance.Credit(amountMinor, Guid.NewGuid(), description, DateTimeOffset.UtcNow);
+        db.SaveChanges();
+
+        return balance.Id;
     }
 }
