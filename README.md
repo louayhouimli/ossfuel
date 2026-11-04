@@ -1,105 +1,108 @@
 # OSSFuel
 
-OSSFuel gives open-source maintainers a way to use sponsor-funded AI. Sponsors add funds to a project's AI balance, and maintainers spend that balance on the tools they need to build and maintain the project.
+OSSFuel connects open-source software maintainers with sponsor-funded AI compute. Sponsors contribute funding to a project's dedicated AI balance, and maintainers spend that balance on AI-assisted development tools to build, test, and maintain their repositories.
 
-## The problem
+---
 
-AI tools help maintainers with coding, debugging, testing, documentation, and refactoring. The usage costs are recurring, though, and maintainers often pay them themselves.
+## The Problem
 
-General project funding does not show which AI requests were paid for or how much they cost. OSSFuel adds a transparent funding and accounting layer around the AI tools maintainers already use.
+AI coding tools dramatically accelerate software development, but their subscription and token usage fees create a recurring financial burden for open-source maintainers. Traditional open-source sponsorship lacks a transparent accounting link between donated funds and the actual AI resources consumed.
 
-## How it works
+OSSFuel introduces a dedicated, transparent funding and accounting ledger that connects:
 
-1. A sponsor funds an open-source project.
-2. An external payment provider confirms the payment.
-3. The funds increase the project's AI balance.
-4. A maintainer makes an AI request through the OSSFuel gateway.
-5. OSSFuel checks the available balance and forwards the request to OpenRouter or another AI provider.
-6. The provider returns the response and usage data.
-7. OSSFuel calculates the cost, deducts the balance, and records a transaction.
+$$\text{Sponsor Funding} \longrightarrow \text{Dedicated AI Balance} \longrightarrow \text{AI Usage} \longrightarrow \text{Transparent Ledger}$$
 
-Funding → AI balance → AI usage → cost → balance transaction
+---
 
-## What OSSFuel is
+## Current Status & Implemented Sprints
 
-OSSFuel is not an AI model. It is a funding, gateway, and accounting layer that connects open-source projects with existing AI clients and providers.
+### ✅ Sprint 1: Foundation & Authentication
+- **GitHub OAuth 2.0:** Single sign-on with GitHub, user provisioning, and encrypted token storage using ASP.NET Core Data Protection.
+- **Session Management:** Secure HTTP-only sliding session cookies (`ossfuel.session`).
+- **Core Infrastructure:** Modular monolith with vertical slices, PostgreSQL backing store, Docker Compose environment, and GitHub Actions CI.
 
-Potential clients include Aider, Continue, and custom integrations. OSSFuel will keep those clients separate from the balance and usage accounting logic.
+### ✅ Sprint 2: Project Management, AI Balance & Funding
+- **Repository Linking:** Maintainers import and verify public GitHub repositories; metadata (stars, forks, open issues, language, topics) auto-syncs.
+- **Public Discovery:** Public project catalog and detail screens with search, pagination, and real-time status.
+- **Dedicated AI Balance:** Every project opens with a minor-unit integer ledger (`long AmountMinor` in USD cents, avoiding floating-point rounding errors).
+- **Project Funding Flow:** Sponsors fund projects through hosted checkout sessions with configurable limits ($1.00 – $10,000.00).
+- **Ledger Invariants & Idempotency:** Atomic database transactions credit balances and append immutable `BalanceTransaction` records. Unique index constraints and optimistic concurrency tokens (`xmin`) eliminate race conditions.
+- **Sponsor History & Management:** Sponsors track past funding contributions, view live statuses (`pending`, `succeeded`, `failed`, `cancelled`), and can resume or cancel pending checkouts.
 
-## Current status
+### ⏳ Upcoming Sprints
+- **Sprint 3 (AI Gateway & API Keys):** OpenAI-compatible proxy, project API key generation and revocation, request routing to OpenRouter, and balance checks before request execution.
+- **Sprint 4 (AI Usage & Cost Management):** Token recording (input, output, total), cost calculation, and balance deductions.
+- **Sprint 5 (Dashboards & Mobile):** Maintainer analytics dashboard, sponsor overview, and companion mobile application.
 
-The project is in early development. The repository currently contains:
+---
 
-- A React and TypeScript web application
-- An ASP.NET Core API
-- PostgreSQL setup through Docker Compose
-- Unit and integration test projects
-- Initial authentication screens and health endpoints
+## Tech Stack
 
-The payment flow, AI gateway, provider integration, balance ledger, and usage analytics are planned but are not implemented yet.
+- **Backend:** C# / .NET 10, ASP.NET Core Minimal APIs, Entity Framework Core 10, PostgreSQL (Npgsql).
+- **Frontend:** React 19, TypeScript, Vite, TanStack Router (type-safe routing), TanStack Query, Tailwind CSS, shadcn/ui.
+- **Architecture:** Vertical Slice Architecture (Features: `Auth`, `Balances`, `Funding`, `GitHub`, `Projects`, `Users`).
+- **Testing:** xUnit, custom `WebApplicationFactory` integration testing harness (98 automated tests).
+- **Monorepo Tooling:** pnpm workspaces, Turborepo.
 
-## Tech stack
+---
 
-- **Frontend:** React, TypeScript, Vite, TanStack Router, TanStack Query, shadcn/ui
-- **Backend:** C#, ASP.NET Core, REST API
-- **Database:** PostgreSQL
-- **Testing:** xUnit and integration testing
-
-## Planned architecture
-
-```text
-Aider / Continue / Custom client
-                |
-                v
-          OSSFuel API
-                |
-          Check AI balance
-                |
-                v
-       OpenRouter / AI provider
-                |
-       Response + usage data
-                |
-                v
-    Cost calculation + ledger
-```
-
-The API also needs to receive verified payment events and expose project-level funding and usage information to the web application.
-
-## Repository layout
+## Repository Layout
 
 ```text
-apps/web       React frontend
-apps/api       ASP.NET Core API and .NET tests
-packages/ui    Shared UI components and styles
+apps/
+  api/                    # ASP.NET Core Minimal API and test projects
+    OSSFuel.Api/          # Domain, features, and endpoints
+    OSSFuel.UnitTests/    # Unit tests
+    OSSFuel.IntegrationTests/ # End-to-end integration tests
+  web/                    # React 19 TanStack Start / Router frontend
+packages/
+  ui/                     # Shared design system components
+docs/
+  superpowers/
+    specs/                # Architecture specifications (Sprint 1, Sprint 2)
+    plans/                # Step-by-step TDD implementation plans
 ```
 
-## Local development
+---
 
-Requirements:
+## Local Development
 
-- Node.js 20 or newer
-- pnpm 10
-- .NET 10
-- Docker with Docker Compose
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v20 or newer)
+- [pnpm](https://pnpm.io/) (v10 or newer)
+- [.NET SDK](https://dotnet.microsoft.com/) (10.0 or newer)
+- [Docker](https://www.docker.com/) with Docker Compose
 
-Install dependencies and start the local services:
+### Getting Started
 
-```bash
-pnpm install
-docker compose up -d postgres
-pnpm dev
-```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/your-org/ossfuel.git
+   cd ossfuel
+   ```
 
-Run the repository checks:
+2. **Install frontend dependencies:**
+   ```bash
+   pnpm install
+   ```
 
-```bash
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-```
+3. **Start PostgreSQL database:**
+   ```bash
+   docker compose up -d postgres
+   ```
 
-## Long-term goal
+4. **Run the API & Web servers:**
+   ```bash
+   # In terminal 1 (Backend API):
+   dotnet run --project apps/api/OSSFuel.Api
 
-Make it practical for an open-source project to say: "AI usage is funded by its sponsors, and every charge is visible."
+   # In terminal 2 (Frontend Web):
+   pnpm --filter web dev
+   ```
+
+5. **Run tests:**
+   ```bash
+   # Run all unit and integration tests:
+   dotnet test apps/api/OSSFuel.UnitTests/OSSFuel.UnitTests.csproj -c Release
+   dotnet test apps/api/OSSFuel.IntegrationTests/OSSFuel.IntegrationTests.csproj -c Release
+   ```
