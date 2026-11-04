@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ArrowLeft } from "lucide-react"
 import { FundingStatusBadge } from "@/components/funding-status"
 import { Loader } from "@/components/loader"
 import { PageHeader } from "@/components/page-header"
 import { ApiError } from "@/lib/api"
-import { formatMoney, fundingQueryOptions } from "@/lib/funding"
+import { cancelFunding, formatMoney, fundingQueryOptions } from "@/lib/funding"
 import { buttonPrimary, buttonOutline, eyebrowItem, panel } from "@/lib/styles"
 import { cn } from "@workspace/ui/lib/utils"
 
@@ -32,12 +32,21 @@ export const Route = createFileRoute(
 
 function FundingPage() {
   const { fundingId } = Route.useParams()
+  const queryClient = useQueryClient()
   const {
     data: funding,
     isLoading,
     isError,
     error,
   } = useQuery(fundingQueryOptions(fundingId))
+
+  const cancel = useMutation({
+    mutationFn: () => cancelFunding(fundingId),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(fundingQueryOptions(fundingId).queryKey, updated)
+      void queryClient.invalidateQueries({ queryKey: ["fundings"] })
+    },
+  })
 
   const notFound = isError && error instanceof ApiError && error.status === 404
 
@@ -147,6 +156,14 @@ function FundingPage() {
                   >
                     Complete test payment
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => cancel.mutate()}
+                    disabled={cancel.isPending}
+                    className={cn(buttonOutline, "mt-3 w-full disabled:opacity-60")}
+                  >
+                    {cancel.isPending ? "Cancelling..." : "Cancel this payment"}
+                  </button>
                 </>
               ) : null}
 

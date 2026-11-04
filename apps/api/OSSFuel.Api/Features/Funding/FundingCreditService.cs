@@ -213,7 +213,7 @@ public sealed class FundingCreditService(
         new()
         {
             Id = Guid.NewGuid(),
-            Provider = Funding.MockProvider,
+            Provider = notification.Provider,
             ProviderEventId = notification.EventId,
             Type = notification.Type,
             ProviderObjectId = notification.ObjectId,

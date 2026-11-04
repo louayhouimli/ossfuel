@@ -133,7 +133,33 @@ public class FundingCreationTests : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
         Assert.Equal(firstPayload!.Id, secondPayload!.Id);
+        Assert.NotNull(secondPayload.CheckoutUrl);
+        Assert.Equal(firstPayload.CheckoutUrl, secondPayload.CheckoutUrl);
         Assert.Single(_factory.ReadDb(db => db.Fundings.ToList()));
+    }
+
+    [Fact]
+    public async Task CancelFunding_WhenPending_CancelsAndAllowsCreatingNewFunding()
+    {
+        var sponsorId = _factory.SeedUser();
+        var ownerId = _factory.SeedUser(login: "owner");
+        var projectId = _factory.SeedProject(ownerId);
+        var client = _factory.CreateClientFor(sponsorId);
+
+        var createResponse = await client.PostAsJsonAsync("/fundings", new { projectId, amountMinor = 2500 });
+        var created = await createResponse.Content.ReadFromJsonAsync<FundingPayload>();
+
+        var cancelResponse = await client.PostAsync($"/fundings/{created!.Id}/cancel", null);
+        Assert.Equal(HttpStatusCode.OK, cancelResponse.StatusCode);
+
+        var cancelled = await cancelResponse.Content.ReadFromJsonAsync<FundingPayload>();
+        Assert.Equal("cancelled", cancelled!.Status);
+
+        var newResponse = await client.PostAsJsonAsync("/fundings", new { projectId, amountMinor = 5000 });
+        Assert.Equal(HttpStatusCode.Created, newResponse.StatusCode);
+
+        var newFunding = await newResponse.Content.ReadFromJsonAsync<FundingPayload>();
+        Assert.Equal(5000, newFunding!.AmountMinor);
     }
 
     [Fact]

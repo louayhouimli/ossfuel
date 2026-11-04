@@ -15,4 +15,5 @@ public sealed record PaymentNotification(
     long AmountMinor,
     string Currency,
     string? PaymentIntentId,
-    PaymentAction Action);
+    PaymentAction Action,
+    string Provider = Funding.MockProvider);

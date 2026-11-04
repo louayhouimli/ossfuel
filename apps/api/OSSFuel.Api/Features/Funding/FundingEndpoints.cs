@@ -18,6 +18,7 @@ public static class FundingEndpoints
         app.MapPost("/fundings", CreateFundingAsync).RequireAuthorization();
         app.MapGet("/fundings", GetFundingsAsync).RequireAuthorization();
         app.MapGet("/fundings/{id:guid}", GetFundingAsync).RequireAuthorization();
+        app.MapPost("/fundings/{id:guid}/cancel", CancelFundingAsync).RequireAuthorization();
 
         if (includeMockEndpoints)
         {
@@ -77,7 +78,7 @@ public static class FundingEndpoints
         if (pending is not null)
         {
             return pending.AmountMinor == request.AmountMinor
-                ? Results.Ok(ToResponse(pending, project.FullName))
+                ? Results.Ok(ToResponse(pending, project.FullName, includeCheckoutUrl: true))
                 : Results.Problem(
                     statusCode: StatusCodes.Status409Conflict,
                     title: "Funding already pending",
@@ -151,7 +152,7 @@ public static class FundingEndpoints
                 funding.Project.FullName,
                 funding.AmountMinor,
                 funding.Currency,
-                funding.Status.ToString().ToLower(),
+                funding.Status.ToString().ToLowerInvariant(),
                 null,
                 funding.CreatedAt,
                 funding.CompletedAt))
@@ -187,6 +188,63 @@ public static class FundingEndpoints
         return funding.SponsorUserId == user.Id
             ? Results.Ok(ToResponse(funding, funding.Project.FullName))
             : NotPermittedProblem();
+    }
+
+    private static async Task<IResult> CancelFundingAsync(
+        Guid id,
+        ClaimsPrincipal principal,
+        OSSFuelDbContext db,
+        FundingCreditService credits,
+        CancellationToken cancellationToken)
+    {
+        var user = await CurrentUser.LoadAsync(principal, db, cancellationToken);
+
+        if (user is null)
+        {
+            return Results.Unauthorized();
+        }
+
+        var funding = await db
+            .Fundings
+            .Include(candidate => candidate.Project)
+            .FirstOrDefaultAsync(candidate => candidate.Id == id, cancellationToken);
+
+        if (funding is null)
+        {
+            return Results.NotFound();
+        }
+
+        if (funding.SponsorUserId != user.Id)
+        {
+            return NotPermittedProblem();
+        }
+
+        if (funding.Status != FundingStatus.Pending)
+        {
+            return Results.Ok(ToResponse(funding, funding.Project.FullName));
+        }
+
+        var now = DateTimeOffset.UtcNow;
+
+        await credits.ApplyAsync(
+            new PaymentNotification(
+                EventId: $"cancel:{funding.Id:N}:{now:O}",
+                Type: "payment.cancelled",
+                ObjectId: funding.ProviderCheckoutSessionId ?? funding.Id.ToString("N"),
+                AmountMinor: funding.AmountMinor,
+                Currency: funding.Currency,
+                PaymentIntentId: null,
+                Action: PaymentAction.Cancel,
+                Provider: funding.Provider),
+            cancellationToken);
+
+        var current = await db
+            .Fundings
+            .AsNoTracking()
+            .Include(candidate => candidate.Project)
+            .FirstAsync(candidate => candidate.Id == id, cancellationToken);
+
+        return Results.Ok(ToResponse(current, current.Project.FullName));
     }
 
     private static async Task<IResult> CompleteMockPaymentAsync(
@@ -249,7 +307,8 @@ public static class FundingEndpoints
                 AmountMinor: funding.AmountMinor,
                 Currency: funding.Currency,
                 PaymentIntentId: action == PaymentAction.Credit ? $"mock_pi_{funding.Id:N}" : null,
-                Action: action.Value),
+                Action: action.Value,
+                Provider: funding.Provider),
             cancellationToken);
 
         var current = await db
