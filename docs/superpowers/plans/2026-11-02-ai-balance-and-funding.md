@@ -379,7 +379,7 @@ Run: `dotnet test apps/api/OSSFuel.UnitTests/OSSFuel.UnitTests.csproj -c Release
 
 - [ ] **Step 3: Implement the entity**
 
-Properties from spec section 7, navigations `Project` and `Sponsor`, constant `StripeProvider = "stripe"`. `MarkSucceeded` throws `InvalidOperationException("Funding is not pending.")` unless `Pending`. `CanTransitionTo` returns true only from `Pending` to any other status. `MarkCheckoutCreated` sets the session id and URL and `UpdatedAt`. `MarkFailed` and `MarkCancelled` set `FailureReason`, `CompletedAt`, `UpdatedAt`.
+Properties from spec section 7, navigations `Project` and `Sponsor`, constant `StripeProvider = "stripe"`. `CanTransitionTo` returns true only from `Pending` to any other status. `MarkCheckoutCreated` sets the session id and URL and `UpdatedAt`. `MarkSucceeded`, `MarkFailed` and `MarkCancelled` each throw `InvalidOperationException("Funding is not pending.")` unless `Pending`; `MarkSucceeded` also sets `ProviderPaymentIntentId` and `CompletedAt`, and `MarkFailed` and `MarkCancelled` set `FailureReason`, `CompletedAt` and `UpdatedAt`.
 
 `FundingConfiguration`: key, indexes from the spec, `Status` stored lowercase via a value converter, unique indexes on the two provider ids, and:
 
@@ -581,6 +581,8 @@ private static FundingResponse ToResponse(Funding funding, string projectFullNam
 
 maps the entity and supplies `checkoutUrl` only when asked. The client-facing `status` is `funding.Status.ToString().ToLowerInvariant()`. Define `private sealed record FundingPayload(...)` inside the test file.
 
+9. Register `IPaymentProvider` once in `Program.cs` as `UnconfiguredPaymentProvider`, a tiny class with `IsConfigured => false` whose other members throw `InvalidOperationException`. Without it a production request fails dependency injection instead of returning the documented 503. Task 9 replaces this registration.
+
 `MapFundingEndpoints` registers only `POST /fundings` in this task.
 
 - [ ] **Step 5: Run and confirm they pass**
@@ -711,8 +713,8 @@ public async Task<PaymentOutcome> ApplyAsync(PaymentNotification notification, C
 2. Load the funding by `ProviderCheckoutSessionId == notification.ObjectId` including `Project` and `Sponsor`, then load its balance with `db.AIBalances.FirstAsync(b => b.ProjectId == funding.ProjectId)` inside the credit step. Missing funding means record `Unmatched` and return it.
 3. `notification.Action == Ignore` records `Ignored` and returns it.
 4. Amount or currency mismatch records `Rejected` with a detail naming both amounts and returns it.
-5. `Action == Fail` calls `MarkFailed` when pending, records `Failed`, saves, returns `Failed`.
-6. `Action == Cancel` calls `MarkCancelled` when pending, records `Cancelled`, saves, returns `Cancelled`.
+5. `Action == Fail`: when `Pending`, call `MarkFailed`, record `Failed`, save, return `Failed`. When the funding is in any other status, record `Ignored`, save, return `Ignored`.
+6. `Action == Cancel`: when `Pending`, call `MarkCancelled`, record `Cancelled`, save, return `Cancelled`. Otherwise record `Ignored`, save, return `Ignored`.
 7. `Action == Credit`:
    - Already `Succeeded` records `Duplicate` and returns it.
    - Not `Pending` records `Ignored` and returns it.
@@ -1071,29 +1073,42 @@ Note in the commit that an existing volume does not re-run init scripts; `docker
 [Trait("Category", "Postgres")]
 public sealed class FundingConcurrencyTests : IAsyncLifetime
 {
+    private PostgresFundingWebApplicationFactory _factory = null!;
+
+    public async Task InitializeAsync()
+    {
+        _factory = new PostgresFundingWebApplicationFactory();
+        _factory.CreateClient(); // starts the host, which migrates the schema
+    }
+
+    public async Task DisposeAsync() => await _factory.DisposeAsync();
+
     [Fact]
     public async Task Two_identical_webhooks_at_once_credit_once()
     {
-        var (projectId, fundingId) = SeedPendingFunding(2500);
+        var (projectId, fundingId) = _factory.SeedPendingFunding(2500);
         var notification = Notification.Paid(fundingId, 2500);
 
         var results = await Task.WhenAll(
-            Task.Run(() => ApplyAsync(notification)),
-            Task.Run(() => ApplyAsync(notification)));
+            Task.Run(() => _factory.ApplyPaymentAsync(notification)),
+            Task.Run(() => _factory.ApplyPaymentAsync(notification)));
 
         Assert.Contains(PaymentOutcome.Credited, results);
-        Assert.Equal(2500, BalanceOf(projectId));
-        Assert.Single(TransactionsOf(fundingId));
-        Assert.Single(PaymentEventsFor(notification.EventId));
+        Assert.Equal(2500, _factory.BalanceOf(projectId));
+        Assert.Single(_factory.TransactionsOf(fundingId));
+        Assert.Single(_factory.ReadDb(db =>
+            db.PaymentEvents.Where(e => e.ProviderEventId == notification.EventId).ToList()));
     }
-```
-
-`ApplyPaymentAsync` opens its own scope per call, so the two tasks really do race on separate `DbContext` instances. Use the existing `ReadDb` helper for `PaymentEventsFor`, or inline `ReadDb(db => db.PaymentEvents.Where(e => e.ProviderEventId == id).ToList())`.
 
     [Fact]
-    public async Task The_unique_index_refuses_a_second_credit_row() { /* insert two BalanceTransactions with the same FundingId -> DbUpdateException */ }
+    public async Task The_unique_index_refuses_a_second_credit_row()
+    {
+        // Insert two BalanceTransactions with the same FundingId, save, expect DbUpdateException.
+    }
 }
 ```
+
+`ApplyPaymentAsync` opens its own scope per call, so the two tasks really do race on separate `DbContext` instances.
 
 - [ ] **Step 3: Run it and confirm it fails**
 
