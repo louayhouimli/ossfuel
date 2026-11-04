@@ -54,6 +54,7 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
     {
         var client = CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
+        client.DefaultRequestHeaders.Add("X-OSSFuel-Client", "web");
 
         return client;
     }

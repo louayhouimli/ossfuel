@@ -16,6 +16,7 @@ export async function apiFetch<T>(
   init?: RequestInit
 ): Promise<T> {
   const headers = new Headers(init?.headers)
+  headers.set("X-OSSFuel-Client", "web")
 
   if (init?.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json")
