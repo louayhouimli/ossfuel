@@ -4,7 +4,10 @@ import { Star } from "lucide-react"
 import { Loader } from "@/components/loader"
 import { PageHeader } from "@/components/page-header"
 import { ApiError, API_URL } from "@/lib/api"
-import { availableRepositoriesQueryOptions, importProject } from "@/lib/projects"
+import {
+  availableRepositoriesQueryOptions,
+  importProject,
+} from "@/lib/projects"
 import {
   buttonPrimary,
   buttonPrimaryCompact,

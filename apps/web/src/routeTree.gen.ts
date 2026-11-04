@@ -17,6 +17,9 @@ import { Route as SiteAuthenticatedDashboardRouteImport } from './routes/_site/_
 import { Route as SiteAuthenticatedImportRouteImport } from './routes/_site/_authenticated/import'
 import { Route as SiteProjectsIndexRouteImport } from './routes/_site/projects/index'
 import { Route as SiteProjectsProjectIdRouteImport } from './routes/_site/projects/$projectId'
+import { Route as SiteAuthenticatedFundingsIndexRouteImport } from './routes/_site/_authenticated/fundings/index'
+import { Route as SiteAuthenticatedFundingsFundingIdRouteImport } from './routes/_site/_authenticated/fundings/$fundingId'
+import { Route as SiteAuthenticatedMockCheckoutFundingIdRouteImport } from './routes/_site/_authenticated/mock-checkout/$fundingId'
 
 const SiteRouteRoute = SiteRouteRouteImport.update({
   id: '/_site',
@@ -57,6 +60,24 @@ const SiteProjectsProjectIdRoute = SiteProjectsProjectIdRouteImport.update({
   path: '/projects/$projectId',
   getParentRoute: () => SiteRouteRoute,
 } as any)
+const SiteAuthenticatedFundingsIndexRoute =
+  SiteAuthenticatedFundingsIndexRouteImport.update({
+    id: '/fundings/',
+    path: '/fundings/',
+    getParentRoute: () => SiteAuthenticatedRouteRoute,
+  } as any)
+const SiteAuthenticatedFundingsFundingIdRoute =
+  SiteAuthenticatedFundingsFundingIdRouteImport.update({
+    id: '/fundings/$fundingId',
+    path: '/fundings/$fundingId',
+    getParentRoute: () => SiteAuthenticatedRouteRoute,
+  } as any)
+const SiteAuthenticatedMockCheckoutFundingIdRoute =
+  SiteAuthenticatedMockCheckoutFundingIdRouteImport.update({
+    id: '/mock-checkout/$fundingId',
+    path: '/mock-checkout/$fundingId',
+    getParentRoute: () => SiteAuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof SiteIndexRoute
@@ -65,6 +86,9 @@ export interface FileRoutesByFullPath {
   '/import': typeof SiteAuthenticatedImportRoute
   '/projects/$projectId': typeof SiteProjectsProjectIdRoute
   '/projects/': typeof SiteProjectsIndexRoute
+  '/fundings/$fundingId': typeof SiteAuthenticatedFundingsFundingIdRoute
+  '/mock-checkout/$fundingId': typeof SiteAuthenticatedMockCheckoutFundingIdRoute
+  '/fundings/': typeof SiteAuthenticatedFundingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof SiteIndexRoute
@@ -73,6 +97,9 @@ export interface FileRoutesByTo {
   '/import': typeof SiteAuthenticatedImportRoute
   '/projects/$projectId': typeof SiteProjectsProjectIdRoute
   '/projects': typeof SiteProjectsIndexRoute
+  '/fundings/$fundingId': typeof SiteAuthenticatedFundingsFundingIdRoute
+  '/mock-checkout/$fundingId': typeof SiteAuthenticatedMockCheckoutFundingIdRoute
+  '/fundings': typeof SiteAuthenticatedFundingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -84,6 +111,9 @@ export interface FileRoutesById {
   '/_site/_authenticated/import': typeof SiteAuthenticatedImportRoute
   '/_site/projects/$projectId': typeof SiteProjectsProjectIdRoute
   '/_site/projects/': typeof SiteProjectsIndexRoute
+  '/_site/_authenticated/fundings/$fundingId': typeof SiteAuthenticatedFundingsFundingIdRoute
+  '/_site/_authenticated/mock-checkout/$fundingId': typeof SiteAuthenticatedMockCheckoutFundingIdRoute
+  '/_site/_authenticated/fundings/': typeof SiteAuthenticatedFundingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -94,6 +124,9 @@ export interface FileRouteTypes {
     | '/import'
     | '/projects/$projectId'
     | '/projects/'
+    | '/fundings/$fundingId'
+    | '/mock-checkout/$fundingId'
+    | '/fundings/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -102,6 +135,9 @@ export interface FileRouteTypes {
     | '/import'
     | '/projects/$projectId'
     | '/projects'
+    | '/fundings/$fundingId'
+    | '/mock-checkout/$fundingId'
+    | '/fundings'
   id:
     | '__root__'
     | '/_site'
@@ -112,6 +148,9 @@ export interface FileRouteTypes {
     | '/_site/_authenticated/import'
     | '/_site/projects/$projectId'
     | '/_site/projects/'
+    | '/_site/_authenticated/fundings/$fundingId'
+    | '/_site/_authenticated/mock-checkout/$fundingId'
+    | '/_site/_authenticated/fundings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -177,18 +216,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SiteProjectsProjectIdRouteImport
       parentRoute: typeof SiteRouteRoute
     }
+    '/_site/_authenticated/fundings/': {
+      id: '/_site/_authenticated/fundings/'
+      path: '/fundings'
+      fullPath: '/fundings/'
+      preLoaderRoute: typeof SiteAuthenticatedFundingsIndexRouteImport
+      parentRoute: typeof SiteAuthenticatedRouteRoute
+    }
+    '/_site/_authenticated/fundings/$fundingId': {
+      id: '/_site/_authenticated/fundings/$fundingId'
+      path: '/fundings/$fundingId'
+      fullPath: '/fundings/$fundingId'
+      preLoaderRoute: typeof SiteAuthenticatedFundingsFundingIdRouteImport
+      parentRoute: typeof SiteAuthenticatedRouteRoute
+    }
+    '/_site/_authenticated/mock-checkout/$fundingId': {
+      id: '/_site/_authenticated/mock-checkout/$fundingId'
+      path: '/mock-checkout/$fundingId'
+      fullPath: '/mock-checkout/$fundingId'
+      preLoaderRoute: typeof SiteAuthenticatedMockCheckoutFundingIdRouteImport
+      parentRoute: typeof SiteAuthenticatedRouteRoute
+    }
   }
 }
 
 interface SiteAuthenticatedRouteRouteChildren {
   SiteAuthenticatedDashboardRoute: typeof SiteAuthenticatedDashboardRoute
   SiteAuthenticatedImportRoute: typeof SiteAuthenticatedImportRoute
+  SiteAuthenticatedFundingsFundingIdRoute: typeof SiteAuthenticatedFundingsFundingIdRoute
+  SiteAuthenticatedMockCheckoutFundingIdRoute: typeof SiteAuthenticatedMockCheckoutFundingIdRoute
+  SiteAuthenticatedFundingsIndexRoute: typeof SiteAuthenticatedFundingsIndexRoute
 }
 
 const SiteAuthenticatedRouteRouteChildren: SiteAuthenticatedRouteRouteChildren =
   {
     SiteAuthenticatedDashboardRoute: SiteAuthenticatedDashboardRoute,
     SiteAuthenticatedImportRoute: SiteAuthenticatedImportRoute,
+    SiteAuthenticatedFundingsFundingIdRoute:
+      SiteAuthenticatedFundingsFundingIdRoute,
+    SiteAuthenticatedMockCheckoutFundingIdRoute:
+      SiteAuthenticatedMockCheckoutFundingIdRoute,
+    SiteAuthenticatedFundingsIndexRoute: SiteAuthenticatedFundingsIndexRoute,
   }
 
 const SiteAuthenticatedRouteRouteWithChildren =

@@ -1,8 +1,25 @@
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
-import { ArrowLeft, ExternalLink, RefreshCw, Trash2 } from "lucide-react"
+import {
+  ArrowLeft,
+  Calendar,
+  CircleDot,
+  Clock,
+  Code,
+  ExternalLink,
+  FolderGit2,
+  GitBranch,
+  GitFork,
+  Globe,
+  RefreshCw,
+  Star,
+  Tag,
+  Trash2,
+} from "lucide-react"
 import { Loader } from "@/components/loader"
+import { BalancePanel } from "@/components/balance-panel"
+import { FundProjectForm } from "@/components/fund-project-form"
 import { LiveTime } from "@/components/live-time"
 import { PageHeader } from "@/components/page-header"
 import { authQueryOptions } from "@/lib/auth"
@@ -155,91 +172,157 @@ function ProjectDetailPage() {
           />
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <a href="#fund" className={cn(buttonPrimary, "sm:w-fit")}>
+              Fund this project
+            </a>
             <a
               href={project.htmlUrl}
               target="_blank"
               rel="noreferrer"
-              className={cn(buttonPrimary, "sm:w-fit")}
+              className={cn(buttonOutline, "sm:w-fit")}
             >
               View on GitHub
               <ExternalLink size={16} aria-hidden="true" />
             </a>
-            {project.homepageUrl ? (
-              <a
-                href={project.homepageUrl}
-                className={cn(buttonOutline, "sm:w-fit")}
-              >
-                Project website
-              </a>
-            ) : null}
           </div>
 
-          <dl className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat
-              label="Stars"
-              value={new Intl.NumberFormat().format(project.stars)}
-            />
-            <Stat
-              label="Forks"
-              value={new Intl.NumberFormat().format(project.forks)}
-            />
-            <Stat
-              label="Open issues"
-              value={new Intl.NumberFormat().format(project.openIssues)}
-            />
-            <Stat
-              label="Language"
-              value={project.language ?? "Not specified"}
-            />
-          </dl>
+          <section
+            id="fund"
+            className="mt-10 scroll-mt-24"
+            aria-label="Project funding"
+          >
+            <div className="grid items-start gap-3 lg:grid-cols-[1.4fr_1fr]">
+              <BalancePanel projectId={projectId} />
 
-          <dl className="mt-10 grid gap-x-6 gap-y-6 border-t border-foreground/15 pt-8 sm:grid-cols-2">
-            <div>
-              <dt className={eyebrowItem}>Repository</dt>
-              <dd className="mt-2">
+              {user ? (
+                <FundProjectForm projectId={projectId} />
+              ) : (
+                <div className={panel}>
+                  <p className={eyebrowItem}>Fund this project</p>
+                  <h2 className="mt-3 text-xl font-bold tracking-[-0.03em]">
+                    Add to the AI Balance
+                  </h2>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    Sign in with GitHub to fund this project. Your own funding
+                    history stays private to you.
+                  </p>
+                  <Link
+                    to="/sign-in"
+                    className={cn(buttonPrimary, "mt-5 w-full")}
+                  >
+                    Sign in to fund
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="mt-12" aria-labelledby="record-heading">
+            <h2 id="record-heading" className={eyebrowItem}>
+              Repository record
+            </h2>
+
+            <dl className="mt-4 border-t border-foreground/15">
+              <RecordRow
+                label="Full name"
+                icon={<FolderGit2 size={14} aria-hidden="true" />}
+              >
                 <a
                   href={project.htmlUrl}
-                  className="font-semibold break-words underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
+                  className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 >
                   {project.fullName}
                 </a>
-              </dd>
-            </div>
-            <div>
-              <dt className={eyebrowItem}>Default branch</dt>
-              <dd className="mt-2 font-semibold">
-                {project.defaultBranch ?? "Unknown"}
-              </dd>
-            </div>
-            <div>
-              <dt className={eyebrowItem}>Registered</dt>
-              <dd className="mt-2 font-semibold">
-                {formatDate(project.createdAt)}
-              </dd>
-            </div>
-            <div>
-              <dt className={eyebrowItem}>Repository information</dt>
-              <dd className="mt-2 font-semibold">
-                Retrieved <LiveTime value={project.lastSyncedAt} />
-              </dd>
-            </div>
-          </dl>
+              </RecordRow>
 
-          {project.topics.length > 0 ? (
-            <section className="mt-10">
-              <h2 className={eyebrowItem}>Topics</h2>
-              <ul className="mt-4 flex flex-wrap gap-2">
-                {project.topics.map((topic) => (
-                  <li
-                    key={topic}
-                    className="border border-foreground/20 px-3 py-1.5 text-sm"
+              <RecordRow
+                label="Language"
+                icon={<Code size={14} aria-hidden="true" />}
+              >
+                {project.language ?? "Not specified"}
+              </RecordRow>
+
+              <RecordRow
+                label="Stars"
+                icon={<Star size={14} aria-hidden="true" />}
+              >
+                <span className="tabular-nums">
+                  {numberFormat.format(project.stars)}
+                </span>
+              </RecordRow>
+
+              <RecordRow
+                label="Forks"
+                icon={<GitFork size={14} aria-hidden="true" />}
+              >
+                <span className="tabular-nums">
+                  {numberFormat.format(project.forks)}
+                </span>
+              </RecordRow>
+
+              <RecordRow
+                label="Open issues"
+                icon={<CircleDot size={14} aria-hidden="true" />}
+              >
+                <span className="tabular-nums">
+                  {numberFormat.format(project.openIssues)}
+                </span>
+              </RecordRow>
+
+              <RecordRow
+                label="Default branch"
+                icon={<GitBranch size={14} aria-hidden="true" />}
+              >
+                {project.defaultBranch ?? "Unknown"}
+              </RecordRow>
+
+              {project.homepageUrl ? (
+                <RecordRow
+                  label="Website"
+                  icon={<Globe size={14} aria-hidden="true" />}
+                >
+                  <a
+                    href={project.homepageUrl}
+                    className="underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
                   >
-                    {topic}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+                    {project.homepageUrl}
+                  </a>
+                </RecordRow>
+              ) : null}
+
+              <RecordRow
+                label="Registered"
+                icon={<Calendar size={14} aria-hidden="true" />}
+              >
+                {formatDate(project.createdAt)}
+              </RecordRow>
+
+              <RecordRow
+                label="Last snapshot"
+                icon={<Clock size={14} aria-hidden="true" />}
+              >
+                <LiveTime value={project.lastSyncedAt} />
+              </RecordRow>
+
+              {project.topics.length > 0 ? (
+                <RecordRow
+                  label="Topics"
+                  icon={<Tag size={14} aria-hidden="true" />}
+                >
+                  <ul className="flex flex-wrap gap-2">
+                    {project.topics.map((topic) => (
+                      <li
+                        key={topic}
+                        className="border border-foreground/20 px-2.5 py-1 text-xs font-medium"
+                      >
+                        {topic}
+                      </li>
+                    ))}
+                  </ul>
+                </RecordRow>
+              ) : null}
+            </dl>
+          </section>
 
           {canManage ? (
             <section className="mt-10 border-t border-foreground/15 pt-8">
@@ -334,12 +417,27 @@ function ProjectDetailPage() {
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+const numberFormat = new Intl.NumberFormat()
+
+function RecordRow({
+  label,
+  icon,
+  children,
+}: {
+  label: string
+  icon: ReactNode
+  children: ReactNode
+}) {
   return (
-    <div className={panel}>
-      <dt className={eyebrowItem}>{label}</dt>
-      <dd className="mt-2 font-sans text-2xl font-bold tracking-[-0.04em]">
-        {value}
+    <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-baseline gap-x-4 border-b border-foreground/15 py-3.5 sm:grid-cols-[12rem_minmax(0,1fr)]">
+      <dt className={cn("flex items-center gap-2 leading-5", eyebrowItem)}>
+        <span className="shrink-0 text-muted-foreground" aria-hidden="true">
+          {icon}
+        </span>
+        {label}
+      </dt>
+      <dd className="min-w-0 text-sm leading-5 font-semibold break-words">
+        {children}
       </dd>
     </div>
   )
