@@ -23,14 +23,29 @@ public static class HealthEndpoints
                 await db.Database.OpenConnectionAsync();
                 await db.Database.CloseConnectionAsync();
 
-                return Results.Ok("Database connected");
+                return Results.Ok(new { status = "health", database = "connected" });
             }
             catch (Exception ex)
             {
                 return Results.Problem(
-                    title: "Database connection failed",
-                    detail: ex.ToString());
+                detail: "An error occured while connecting to the database",
+                statusCode: StatusCodes.Status503ServiceUnavailable
+,
+                title: "Database unavailable");
             }
+        });
+
+        app.MapGet("/health/info", (IHostEnvironment env) =>
+        {
+            return Results.Ok(new
+            {
+                environment = env.EnvironmentName,
+                utcNow = DateTimeOffset.UtcNow,
+                status = "alive"
+            }
+
+            );
+
         });
 
         return app;
