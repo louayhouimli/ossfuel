@@ -8,5 +8,10 @@ public interface IAIProviderClient
         ChatCompletionRequest request,
         CancellationToken cancellationToken);
 
+    Task<ChatCompletionProviderResult> CompleteResponsesAsync(
+        string requestJson,
+        bool isStream,
+        CancellationToken cancellationToken);
+
     Task<string> GetModelsJsonAsync(CancellationToken cancellationToken);
 }

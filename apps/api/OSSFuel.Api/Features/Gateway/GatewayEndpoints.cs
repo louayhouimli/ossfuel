@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.ApiKeys;
@@ -9,7 +10,11 @@ public static class GatewayEndpoints
     public static IEndpointRouteBuilder MapGatewayEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapPost("/v1/chat/completions", HandleChatCompletionsAsync);
+        app.MapPost("/api/v1/chat/completions", HandleChatCompletionsAsync);
+        app.MapPost("/v1/responses", HandleResponsesAsync);
+        app.MapPost("/api/v1/responses", HandleResponsesAsync);
         app.MapGet("/v1/models", GetModelsAsync);
+        app.MapGet("/api/v1/models", GetModelsAsync);
         app.MapGet("/projects/{projectId:guid}/ai-usage", GetProjectAIUsageAsync);
 
         return app;
@@ -130,6 +135,142 @@ public static class GatewayEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         if (request.Stream && result.StreamChunks is { Count: > 0 })
+        {
+            httpContext.Response.StatusCode = StatusCodes.Status200OK;
+            httpContext.Response.ContentType = "text/event-stream";
+            httpContext.Response.Headers.CacheControl = "no-cache";
+
+            foreach (var chunk in result.StreamChunks)
+            {
+                await httpContext.Response.WriteAsync($"data: {chunk}\n\n", cancellationToken);
+            }
+
+            await httpContext.Response.WriteAsync("data: [DONE]\n\n", cancellationToken);
+            await httpContext.Response.Body.FlushAsync(cancellationToken);
+
+            return Results.Empty;
+        }
+
+        return Results.Content(result.ResponseJson, "application/json", statusCode: StatusCodes.Status200OK);
+    }
+
+    private static async Task<IResult> HandleResponsesAsync(
+        HttpContext httpContext,
+        IAIProviderClient providerClient,
+        OSSFuelDbContext db,
+        CancellationToken cancellationToken)
+    {
+        var rawKey = ExtractBearerToken(httpContext.Request.Headers.Authorization);
+
+        if (string.IsNullOrWhiteSpace(rawKey))
+        {
+            return OpenAiError(
+                StatusCodes.Status401Unauthorized,
+                "Missing or invalid Authorization Bearer header.",
+                "invalid_api_key");
+        }
+
+        var keyHash = ApiKeyHasher.ComputeSha256Hex(rawKey);
+        var apiKey = await db
+            .ProjectApiKeys
+            .FirstOrDefaultAsync(candidate => candidate.KeyHash == keyHash, cancellationToken);
+
+        if (apiKey is null || !apiKey.IsActive)
+        {
+            return OpenAiError(
+                StatusCodes.Status401Unauthorized,
+                "Invalid or revoked OSSFuel API key.",
+                "invalid_api_key");
+        }
+
+        using var bodyReader = new StreamReader(httpContext.Request.Body);
+        var bodyJson = await bodyReader.ReadToEndAsync(cancellationToken);
+
+        string model = "openrouter/free";
+        bool isStream = false;
+
+        if (!string.IsNullOrWhiteSpace(bodyJson))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(bodyJson);
+                if (doc.RootElement.TryGetProperty("model", out var m) && m.GetString() is { } mStr && !string.IsNullOrWhiteSpace(mStr))
+                {
+                    model = mStr;
+                }
+                if (doc.RootElement.TryGetProperty("stream", out var s) && s.ValueKind is JsonValueKind.True)
+                {
+                    isStream = true;
+                }
+            }
+            catch (JsonException) { }
+        }
+
+        var balance = await db
+            .AIBalances
+            .FirstOrDefaultAsync(candidate => candidate.ProjectId == apiKey.ProjectId, cancellationToken);
+
+        if (balance is null || !balance.HasSufficientFunds(1))
+        {
+            return OpenAiError(
+                StatusCodes.Status402PaymentRequired,
+                "Project AI balance is empty or insufficient to process this request.",
+                "insufficient_quota");
+        }
+
+        var result = await providerClient.CompleteResponsesAsync(bodyJson, isStream, cancellationToken);
+        var now = DateTimeOffset.UtcNow;
+
+        if (!result.Succeeded)
+        {
+            var failedUsage = AIUsage.RecordFailure(
+                apiKey.ProjectId,
+                apiKey.Id,
+                model,
+                providerClient.ProviderName,
+                now);
+
+            apiKey.MarkUsed(now);
+            db.AIUsages.Add(failedUsage);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return OpenAiError(
+                StatusCodes.Status502BadGateway,
+                "Upstream AI provider failed to process the request.",
+                "upstream_error",
+                new { upstream_status = result.StatusCode, upstream_response = result.ResponseJson });
+        }
+
+        var rawCostMinor = TokenCostCalculator.CalculateCostMinor(
+            result.PromptTokens,
+            result.CompletionTokens,
+            result.ProviderCostUsd);
+
+        var debitMinor = Math.Min(balance.AmountMinor, rawCostMinor);
+
+        var usage = AIUsage.RecordSuccess(
+            apiKey.ProjectId,
+            apiKey.Id,
+            model,
+            providerClient.ProviderName,
+            result.PromptTokens,
+            result.CompletionTokens,
+            debitMinor,
+            now);
+
+        apiKey.MarkUsed(now);
+        db.AIUsages.Add(usage);
+
+        var transaction = balance.Debit(
+            debitMinor,
+            usage.Id,
+            $"AI usage ({model})",
+            now);
+
+        db.BalanceTransactions.Add(transaction);
+        await db.SaveChangesAsync(cancellationToken);
+
+        if (isStream && result.StreamChunks is { Count: > 0 })
         {
             httpContext.Response.StatusCode = StatusCodes.Status200OK;
             httpContext.Response.ContentType = "text/event-stream";

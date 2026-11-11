@@ -107,6 +107,21 @@ public sealed class MockAIProviderClient : IAIProviderClient
             ProviderCostUsd: null));
     }
 
+    public Task<ChatCompletionProviderResult> CompleteResponsesAsync(
+        string requestJson,
+        bool isStream,
+        CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new ChatCompletionProviderResult(
+            Succeeded: true,
+            StatusCode: StatusCodes.Status200OK,
+            ResponseJson: """{"id":"resp_mock","object":"response","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"OSSFuel mock response."}]}],"usage":{"input_tokens":10,"output_tokens":20}}""",
+            PromptTokens: 10,
+            CompletionTokens: 20,
+            ProviderCostUsd: null,
+            StreamChunks: isStream ? new[] { """{"type":"response.reasoning_text.delta","delta":"mock"}""" } : null));
+    }
+
     public Task<string> GetModelsJsonAsync(CancellationToken cancellationToken)
     {
         const string mockModels = """
