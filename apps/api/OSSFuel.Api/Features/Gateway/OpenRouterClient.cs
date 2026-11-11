@@ -151,4 +151,81 @@ public sealed class OpenRouterClient(
             // Ignore malformed intermediate SSE lines.
         }
     }
+
+    private static (string Json, DateTimeOffset ExpiresAt)? _cachedModels;
+    private static readonly SemaphoreSlim _modelsLock = new(1, 1);
+
+    public async Task<string> GetModelsJsonAsync(CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (_cachedModels is { } cached && cached.ExpiresAt > now)
+        {
+            return cached.Json;
+        }
+
+        await _modelsLock.WaitAsync(cancellationToken);
+        try
+        {
+            now = DateTimeOffset.UtcNow;
+            if (_cachedModels is { } doubleChecked && doubleChecked.ExpiresAt > now)
+            {
+                return doubleChecked.Json;
+            }
+
+            var config = options.Value;
+            var endpoint = $"{config.BaseUrl.TrimEnd('/')}/models";
+            using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+
+            if (!string.IsNullOrWhiteSpace(config.ApiKey))
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
+            }
+
+            request.Headers.TryAddWithoutValidation("HTTP-Referer", "https://ossfuel-web.vercel.app");
+            request.Headers.TryAddWithoutValidation("X-Title", "OSSFuel");
+
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                _cachedModels = (json, now.AddMinutes(15));
+                return json;
+            }
+
+            if (_cachedModels is { } stale)
+            {
+                return stale.Json;
+            }
+
+            return FallbackModelsJson;
+        }
+        catch
+        {
+            if (_cachedModels is { } stale)
+            {
+                return stale.Json;
+            }
+
+            return FallbackModelsJson;
+        }
+        finally
+        {
+            _modelsLock.Release();
+        }
+    }
+
+    private const string FallbackModelsJson = """
+    {
+      "object": "list",
+      "data": [
+        { "id": "openrouter/free", "object": "model", "name": "Free Models Router", "owned_by": "openrouter" },
+        { "id": "meta-llama/llama-3.3-70b-instruct:free", "object": "model", "name": "Llama 3.3 70B (free)", "owned_by": "meta" },
+        { "id": "deepseek/deepseek-r1:free", "object": "model", "name": "DeepSeek R1 (free)", "owned_by": "deepseek" },
+        { "id": "deepseek/deepseek-chat:free", "object": "model", "name": "DeepSeek Chat (free)", "owned_by": "deepseek" },
+        { "id": "qwen/qwen-2.5-coder-32b-instruct:free", "object": "model", "name": "Qwen 2.5 Coder 32B (free)", "owned_by": "qwen" },
+        { "id": "google/gemini-2.0-flash-exp:free", "object": "model", "name": "Gemini 2.0 Flash Exp (free)", "owned_by": "google" },
+        { "id": "mistralai/mistral-7b-instruct:free", "object": "model", "name": "Mistral 7B (free)", "owned_by": "mistralai" }
+      ]
+    }
+    """;
 }

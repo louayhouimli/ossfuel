@@ -15,22 +15,13 @@ public static class GatewayEndpoints
         return app;
     }
 
-    private static IResult GetModelsAsync() =>
-        Results.Ok(new
-        {
-            @object = "list",
-            data = new[]
-            {
-                new { id = "openrouter/free", @object = "model", owned_by = "openrouter" },
-                new { id = "meta-llama/llama-3.3-70b-instruct:free", @object = "model", owned_by = "meta" },
-                new { id = "deepseek/deepseek-r1:free", @object = "model", owned_by = "deepseek" },
-                new { id = "deepseek/deepseek-chat:free", @object = "model", owned_by = "deepseek" },
-                new { id = "qwen/qwen-2.5-coder-32b-instruct:free", @object = "model", owned_by = "qwen" },
-                new { id = "google/gemini-2.0-flash-exp:free", @object = "model", owned_by = "google" },
-                new { id = "google/gemini-2.0-flash-thinking-exp:free", @object = "model", owned_by = "google" },
-                new { id = "mistralai/mistral-7b-instruct:free", @object = "model", owned_by = "mistralai" }
-            }
-        });
+    private static async Task<IResult> GetModelsAsync(
+        IAIProviderClient providerClient,
+        CancellationToken cancellationToken)
+    {
+        var json = await providerClient.GetModelsJsonAsync(cancellationToken);
+        return Results.Content(json, "application/json");
+    }
 
     private static async Task<IResult> HandleChatCompletionsAsync(
         HttpContext httpContext,
@@ -105,7 +96,8 @@ public static class GatewayEndpoints
             return OpenAiError(
                 StatusCodes.Status502BadGateway,
                 "Upstream AI provider failed to process the request.",
-                "upstream_error");
+                "upstream_error",
+                new { upstream_status = result.StatusCode, upstream_response = result.ResponseJson });
         }
 
         var rawCostMinor = TokenCostCalculator.CalculateCostMinor(
@@ -206,7 +198,7 @@ public static class GatewayEndpoints
         return authHeader["Bearer ".Length..].Trim();
     }
 
-    private static IResult OpenAiError(int statusCode, string message, string code) =>
+    private static IResult OpenAiError(int statusCode, string message, string code, object? details = null) =>
         Results.Json(
             new
             {
@@ -215,6 +207,7 @@ public static class GatewayEndpoints
                     message,
                     type = "ossfuel_gateway_error",
                     code,
+                    details
                 }
             },
             statusCode: statusCode);

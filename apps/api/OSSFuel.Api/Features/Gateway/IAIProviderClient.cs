@@ -7,4 +7,6 @@ public interface IAIProviderClient
     Task<ChatCompletionProviderResult> CompleteChatAsync(
         ChatCompletionRequest request,
         CancellationToken cancellationToken);
+
+    Task<string> GetModelsJsonAsync(CancellationToken cancellationToken);
 }

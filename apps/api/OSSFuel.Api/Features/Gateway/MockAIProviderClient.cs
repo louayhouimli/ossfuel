@@ -106,4 +106,20 @@ public sealed class MockAIProviderClient : IAIProviderClient
             CompletionTokens: completionTokens,
             ProviderCostUsd: null));
     }
+
+    public Task<string> GetModelsJsonAsync(CancellationToken cancellationToken)
+    {
+        const string mockModels = """
+        {
+          "object": "list",
+          "data": [
+            { "id": "openrouter/free", "object": "model", "name": "Free Models Router", "owned_by": "openrouter" },
+            { "id": "meta-llama/llama-3.3-70b-instruct:free", "object": "model", "name": "Llama 3.3 70B (free)", "owned_by": "meta" },
+            { "id": "deepseek/deepseek-r1:free", "object": "model", "name": "DeepSeek R1 (free)", "owned_by": "deepseek" }
+          ]
+        }
+        """;
+
+        return Task.FromResult(mockModels);
+    }
 }
