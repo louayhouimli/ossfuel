@@ -22,6 +22,8 @@ import { BalancePanel } from "@/components/balance-panel"
 import { FundProjectForm } from "@/components/fund-project-form"
 import { LiveTime } from "@/components/live-time"
 import { PageHeader } from "@/components/page-header"
+import { ApiKeysManager } from "@/components/api-keys-manager"
+import { AIUsageAudit } from "@/components/ai-usage-audit"
 import { authQueryOptions } from "@/lib/auth"
 import { ApiError } from "@/lib/api"
 import {
@@ -333,7 +335,10 @@ function ProjectDetailPage() {
                 repository itself untouched.
               </p>
 
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <ApiKeysManager projectId={project.id} />
+              <AIUsageAudit projectId={project.id} />
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
                   onClick={() => refresh.mutate()}
