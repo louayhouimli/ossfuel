@@ -25,12 +25,6 @@
         "openrouter/free": {
           "name": "Free Models Router"
         },
-        "meta-llama/llama-3.3-70b-instruct:free": {
-          "name": "Llama 3.3 70B (free)"
-        },
-        "deepseek/deepseek-r1:free": {
-          "name": "DeepSeek R1 (free)"
-        },
         "baidu/ernie-5.5-flash-preview:free": {
           "name": "Baidu: ERNIE-5.5-Flash-Preview (free)"
         },
@@ -39,12 +33,6 @@
         },
         "dots-studio/dots-3-note-preview:free": {
           "name": "Dots Studio: Dots3-Note Preview (free)"
-        },
-        "google/gemma-4-26b-a4b-it:free": {
-          "name": "Google: Gemma 4 26B (free)"
-        },
-        "google/gemma-4-31b-it:free": {
-          "name": "Google: Gemma 4 31B (free)"
         },
         "liquid/lfm-2.5-2.6b:free": {
           "name": "LiquidAI: LFM2.5-2.6B (free)"
@@ -55,9 +43,6 @@
         "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free": {
           "name": "NVIDIA: Nemotron 3 Nano Omni (free)"
         },
-        "nvidia/nemotron-3-ultra-550b-a55b:free": {
-          "name": "NVIDIA: Nemotron 3 Ultra (free)"
-        },
         "nvidia/nemotron-3.5-lightning:free": {
           "name": "NVIDIA: Nemotron 3.5 Lightning (free)"
         },
@@ -66,9 +51,6 @@
         },
         "recursive/flint-v1.0:free": {
           "name": "Recursive: Flint (free)"
-        },
-        "thinkingmachines/inkling-2-small:free": {
-          "name": "Thinking Machines: Inkling 2 Small (free)"
         }
       }
     }
