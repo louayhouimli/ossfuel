@@ -45,7 +45,8 @@ public sealed class CsrfProtectionMiddleware(RequestDelegate next, IProblemDetai
         context.User.Identity?.IsAuthenticated == true;
 
     private static bool IsExemptPath(PathString path) =>
-        path.StartsWithSegments("/fundings/webhook");
+        path.StartsWithSegments("/fundings/webhook")
+        || path.StartsWithSegments("/v1");
 }
 
 public static class CsrfProtectionExtensions

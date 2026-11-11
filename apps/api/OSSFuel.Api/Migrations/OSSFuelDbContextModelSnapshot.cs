@@ -22,6 +22,54 @@ namespace OSSFuel.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("OSSFuel.Api.Features.ApiKeys.ProjectApiKey", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("KeyHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("KeyPrefix")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("character varying(24)");
+
+                    b.Property<DateTimeOffset?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("KeyHash")
+                        .IsUnique();
+
+                    b.HasIndex("ProjectId", "CreatedAt");
+
+                    b.ToTable("ProjectApiKeys");
+                });
+
             modelBuilder.Entity("OSSFuel.Api.Features.Balances.AIBalance", b =>
                 {
                     b.Property<Guid>("Id")
@@ -68,6 +116,9 @@ namespace OSSFuel.Api.Migrations
                     b.Property<Guid>("AIBalanceId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AIUsageId")
+                        .HasColumnType("uuid");
+
                     b.Property<long>("AmountMinor")
                         .HasColumnType("bigint");
 
@@ -92,6 +143,9 @@ namespace OSSFuel.Api.Migrations
                         .HasColumnType("character varying(40)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AIUsageId")
+                        .IsUnique();
 
                     b.HasIndex("FundingId")
                         .IsUnique();
@@ -215,6 +269,57 @@ namespace OSSFuel.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("PaymentEvents");
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Gateway.AIUsage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApiKeyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CompletionTokens")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("CostMinor")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("PromptTokens")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<int>("TotalTokens")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApiKeyId", "CreatedAt");
+
+                    b.HasIndex("ProjectId", "CreatedAt");
+
+                    b.ToTable("AIUsages");
                 });
 
             modelBuilder.Entity("OSSFuel.Api.Features.Projects.Project", b =>
@@ -343,6 +448,21 @@ namespace OSSFuel.Api.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("OSSFuel.Api.Features.ApiKeys.ProjectApiKey", b =>
+                {
+                    b.HasOne("OSSFuel.Api.Features.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OSSFuel.Api.Features.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("OSSFuel.Api.Features.Balances.AIBalance", b =>
                 {
                     b.HasOne("OSSFuel.Api.Features.Projects.Project", null)
@@ -378,6 +498,21 @@ namespace OSSFuel.Api.Migrations
                     b.Navigation("Project");
 
                     b.Navigation("Sponsor");
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Gateway.AIUsage", b =>
+                {
+                    b.HasOne("OSSFuel.Api.Features.ApiKeys.ProjectApiKey", null)
+                        .WithMany()
+                        .HasForeignKey("ApiKeyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OSSFuel.Api.Features.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("OSSFuel.Api.Features.Projects.Project", b =>

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using OSSFuel.Api.Features.ApiKeys;
 using OSSFuel.Api.Features.Balances;
 using OSSFuel.Api.Features.Funding;
+using OSSFuel.Api.Features.Gateway;
 using OSSFuel.Api.Features.Projects;
 using OSSFuel.Api.Features.Users;
 
@@ -19,6 +21,10 @@ public class OSSFuelDbContext(DbContextOptions<OSSFuelDbContext> options) : DbCo
     public DbSet<Funding> Fundings => Set<Funding>();
 
     public DbSet<PaymentEvent> PaymentEvents => Set<PaymentEvent>();
+
+    public DbSet<ProjectApiKey> ProjectApiKeys => Set<ProjectApiKey>();
+
+    public DbSet<AIUsage> AIUsages => Set<AIUsage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -59,4 +59,41 @@ public class AIBalance
 
         return transaction;
     }
+
+    public bool HasSufficientFunds(long requiredAmountMinor = 1) =>
+        requiredAmountMinor > 0 && AmountMinor >= requiredAmountMinor;
+
+    public BalanceTransaction Debit(long amountMinor, Guid aiUsageId, string? description, DateTimeOffset now)
+    {
+        if (amountMinor <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(amountMinor),
+                amountMinor,
+                "A debit must be a positive amount.");
+        }
+
+        if (AmountMinor < amountMinor)
+        {
+            throw new InvalidOperationException("Insufficient AI balance for this request.");
+        }
+
+        AmountMinor -= amountMinor;
+        UpdatedAt = now;
+
+        var transaction = new BalanceTransaction
+        {
+            AIBalanceId = Id,
+            AIUsageId = aiUsageId,
+            AmountMinor = -amountMinor,
+            Type = BalanceTransaction.AIUsageDebitType,
+            Status = BalanceTransaction.PostedStatus,
+            Description = description,
+            CreatedAt = now,
+        };
+
+        _transactions.Add(transaction);
+
+        return transaction;
+    }
 }

@@ -21,6 +21,8 @@ public class BalanceTransactionConfiguration : IEntityTypeConfiguration<BalanceT
 
         // One funding can only ever produce one credit, even if two requests race.
         builder.HasIndex(transaction => transaction.FundingId).IsUnique();
+        // One AI usage event can only ever produce one debit.
+        builder.HasIndex(transaction => transaction.AIUsageId).IsUnique();
         builder.HasIndex(transaction => new { transaction.AIBalanceId, transaction.CreatedAt });
     }
 }

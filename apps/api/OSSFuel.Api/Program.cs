@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using OSSFuel.Api.Common;
 using OSSFuel.Api.Database;
+using OSSFuel.Api.Features.ApiKeys;
 using OSSFuel.Api.Features.Auth;
 using OSSFuel.Api.Features.Balances;
 using OSSFuel.Api.Features.Funding;
+using OSSFuel.Api.Features.Gateway;
 using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Health;
 using OSSFuel.Api.Features.Projects;
@@ -38,6 +40,7 @@ builder.Services.AddAppRateLimiting();
 builder.Services.AddAuthFeature(builder.Configuration);
 builder.Services.AddGitHubFeature(builder.Configuration);
 builder.Services.AddFundingFeature(builder.Configuration, builder.Environment);
+builder.Services.AddGatewayFeature(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -55,7 +58,6 @@ app.UseHttpsRedirection();
 
 app.UseCors(CorsSetup.Web);
 
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
@@ -68,6 +70,8 @@ app.MapHealthEndpoints();
 app.MapProjectEndpoints();
 app.MapBalanceEndpoints();
 app.MapFundingEndpoints(FundingSetup.UsesMockProvider(builder.Configuration, builder.Environment));
+app.MapApiKeyEndpoints();
+app.MapGatewayEndpoints();
 
 app.Run();
 
