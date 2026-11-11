@@ -117,4 +117,62 @@ public class GatewayEndpointsTests : IDisposable
 
         Assert.Equal(HttpStatusCode.PaymentRequired, response.StatusCode);
     }
+
+    [Fact]
+    public async Task GetModels_ReturnsOpenRouterFreeModelsList()
+    {
+        var response = await _factory.CreateClient().GetAsync("/v1/models");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("openrouter/free", body);
+        Assert.Contains("meta-llama/llama-3.3-70b-instruct:free", body);
+        Assert.Contains("deepseek/deepseek-r1:free", body);
+    }
+
+    [Fact]
+    public async Task PostChatCompletions_WhenModelOmitted_DefaultsToOpenRouterFree()
+    {
+        var ownerId = _factory.SeedUser();
+        var projectId = _factory.SeedProject(ownerId);
+        _factory.SeedCredit(projectId, 500);
+
+        var (rawKey, keyPrefix, keyHash) = ApiKeyHasher.GenerateKey();
+
+        _factory.ReadDb(db =>
+        {
+            var apiKey = ProjectApiKey.Create(
+                projectId,
+                ownerId,
+                "AutoModelKey",
+                keyPrefix,
+                keyHash,
+                DateTimeOffset.UtcNow);
+
+            db.ProjectApiKeys.Add(apiKey);
+            db.SaveChanges();
+            return true;
+        });
+
+        var request = new ChatCompletionRequest(
+            Model: "",
+            Messages: [new ChatMessage("user", "Hello router")]);
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions")
+        {
+            Content = JsonContent.Create(request)
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", rawKey);
+
+        var response = await _factory.CreateClient().SendAsync(httpRequest);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        _factory.ReadDb(db =>
+        {
+            var usage = db.AIUsages.First(u => u.ProjectId == projectId);
+            Assert.Equal("openrouter/free", usage.Model);
+            return true;
+        });
+    }
 }

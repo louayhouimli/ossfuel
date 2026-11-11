@@ -21,6 +21,7 @@ public static class GatewayEndpoints
             @object = "list",
             data = new[]
             {
+                new { id = "openrouter/free", @object = "model", owned_by = "openrouter" },
                 new { id = "meta-llama/llama-3.3-70b-instruct:free", @object = "model", owned_by = "meta" },
                 new { id = "deepseek/deepseek-r1:free", @object = "model", owned_by = "deepseek" },
                 new { id = "deepseek/deepseek-chat:free", @object = "model", owned_by = "deepseek" },
@@ -61,13 +62,17 @@ public static class GatewayEndpoints
                 "invalid_api_key");
         }
 
-        if (string.IsNullOrWhiteSpace(request.Model) || request.Messages is not { Count: > 0 })
+        if (request.Messages is not { Count: > 0 })
         {
             return OpenAiError(
                 StatusCodes.Status400BadRequest,
-                "Both model and at least one message are required.",
+                "At least one message is required.",
                 "invalid_request_error");
         }
+
+        var effectiveRequest = string.IsNullOrWhiteSpace(request.Model)
+            ? request with { Model = "openrouter/free" }
+            : request;
 
         var balance = await db
             .AIBalances
@@ -81,7 +86,7 @@ public static class GatewayEndpoints
                 "insufficient_quota");
         }
 
-        var result = await providerClient.CompleteChatAsync(request, cancellationToken);
+        var result = await providerClient.CompleteChatAsync(effectiveRequest, cancellationToken);
         var now = DateTimeOffset.UtcNow;
 
         if (!result.Succeeded)
@@ -89,7 +94,7 @@ public static class GatewayEndpoints
             var failedUsage = AIUsage.RecordFailure(
                 apiKey.ProjectId,
                 apiKey.Id,
-                request.Model,
+                effectiveRequest.Model,
                 providerClient.ProviderName,
                 now);
 
@@ -113,7 +118,7 @@ public static class GatewayEndpoints
         var usage = AIUsage.RecordSuccess(
             apiKey.ProjectId,
             apiKey.Id,
-            request.Model,
+            effectiveRequest.Model,
             providerClient.ProviderName,
             result.PromptTokens,
             result.CompletionTokens,
@@ -126,7 +131,7 @@ public static class GatewayEndpoints
         var transaction = balance.Debit(
             debitMinor,
             usage.Id,
-            $"AI usage ({request.Model})",
+            $"AI usage ({effectiveRequest.Model})",
             now);
 
         db.BalanceTransactions.Add(transaction);
