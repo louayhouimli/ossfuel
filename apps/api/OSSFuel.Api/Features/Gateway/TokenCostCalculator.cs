@@ -8,8 +8,16 @@ public static class TokenCostCalculator
     public static long CalculateCostMinor(
         int promptTokens,
         int completionTokens,
-        decimal? providerCostUsd = null)
+        decimal? providerCostUsd = null,
+        string? model = null)
     {
+        if (providerCostUsd == 0m
+            || string.Equals(model, "openrouter/free", StringComparison.OrdinalIgnoreCase)
+            || (model != null && model.EndsWith(":free", StringComparison.OrdinalIgnoreCase)))
+        {
+            return 0L;
+        }
+
         decimal costUsd;
 
         if (providerCostUsd is > 0m)

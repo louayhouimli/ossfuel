@@ -13,6 +13,19 @@ public class TokenCostCalculatorTests
     }
 
     [Fact]
+    public void CalculateCostMinor_WithFreeModel_ReturnsZeroCents()
+    {
+        var cost = TokenCostCalculator.CalculateCostMinor(100, 200, providerCostUsd: 0m);
+        Assert.Equal(0L, cost);
+
+        var costRouter = TokenCostCalculator.CalculateCostMinor(100, 200, model: "openrouter/free");
+        Assert.Equal(0L, costRouter);
+
+        var costNamed = TokenCostCalculator.CalculateCostMinor(100, 200, model: "cohere/north-mini-code:free");
+        Assert.Equal(0L, costNamed);
+    }
+
+    [Fact]
     public void CalculateCostMinor_WithHighTokens_RoundsUpCents()
     {
         // 1M prompt tokens ($2.50) + 1M completion tokens ($10.00) = $12.50 = 1250 cents

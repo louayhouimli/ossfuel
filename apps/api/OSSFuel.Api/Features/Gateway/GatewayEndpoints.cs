@@ -122,9 +122,11 @@ public static class GatewayEndpoints
         var rawCostMinor = TokenCostCalculator.CalculateCostMinor(
             result.PromptTokens,
             result.CompletionTokens,
-            result.ProviderCostUsd);
+            result.ProviderCostUsd,
+            effectiveRequest.Model);
 
-        var debitMinor = Math.Min(balance.AmountMinor, rawCostMinor);
+        var balanceAmount = balance?.AmountMinor ?? 0;
+        var debitMinor = Math.Min(balanceAmount, rawCostMinor);
 
         var usage = AIUsage.RecordSuccess(
             apiKey.ProjectId,
@@ -139,13 +141,17 @@ public static class GatewayEndpoints
         apiKey.MarkUsed(now);
         db.AIUsages.Add(usage);
 
-        var transaction = balance.Debit(
-            debitMinor,
-            usage.Id,
-            $"AI usage ({effectiveRequest.Model})",
-            now);
+        if (balance is not null && debitMinor > 0)
+        {
+            var transaction = balance.Debit(
+                debitMinor,
+                usage.Id,
+                $"AI usage ({effectiveRequest.Model})",
+                now);
 
-        db.BalanceTransactions.Add(transaction);
+            db.BalanceTransactions.Add(transaction);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
 
         if (request.Stream && result.StreamChunks is { Count: > 0 })
@@ -272,9 +278,11 @@ public static class GatewayEndpoints
         var rawCostMinor = TokenCostCalculator.CalculateCostMinor(
             result.PromptTokens,
             result.CompletionTokens,
-            result.ProviderCostUsd);
+            result.ProviderCostUsd,
+            model);
 
-        var debitMinor = Math.Min(balance.AmountMinor, rawCostMinor);
+        var balanceAmount = balance?.AmountMinor ?? 0;
+        var debitMinor = Math.Min(balanceAmount, rawCostMinor);
 
         var usage = AIUsage.RecordSuccess(
             apiKey.ProjectId,
@@ -289,13 +297,17 @@ public static class GatewayEndpoints
         apiKey.MarkUsed(now);
         db.AIUsages.Add(usage);
 
-        var transaction = balance.Debit(
-            debitMinor,
-            usage.Id,
-            $"AI usage ({model})",
-            now);
+        if (balance is not null && debitMinor > 0)
+        {
+            var transaction = balance.Debit(
+                debitMinor,
+                usage.Id,
+                $"AI usage ({model})",
+                now);
 
-        db.BalanceTransactions.Add(transaction);
+            db.BalanceTransactions.Add(transaction);
+        }
+
         await db.SaveChangesAsync(cancellationToken);
 
         if (isStream && result.StreamChunks is { Count: > 0 })
