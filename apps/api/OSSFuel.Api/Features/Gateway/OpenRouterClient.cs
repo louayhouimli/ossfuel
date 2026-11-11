@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 
 namespace OSSFuel.Api.Features.Gateway;
@@ -9,6 +10,11 @@ public sealed class OpenRouterClient(
     HttpClient httpClient,
     IOptions<GatewayOptions> options) : IAIProviderClient
 {
+    private static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
     public string ProviderName => AIUsage.OpenRouterProvider;
 
     public async Task<ChatCompletionProviderResult> CompleteChatAsync(
@@ -39,7 +45,7 @@ public sealed class OpenRouterClient(
         };
 
         httpRequest.Content = new StringContent(
-            JsonSerializer.Serialize(payload),
+            JsonSerializer.Serialize(payload, SerializerOptions),
             Encoding.UTF8,
             "application/json");
 
