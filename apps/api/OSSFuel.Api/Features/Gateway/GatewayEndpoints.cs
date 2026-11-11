@@ -9,10 +9,27 @@ public static class GatewayEndpoints
     public static IEndpointRouteBuilder MapGatewayEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapPost("/v1/chat/completions", HandleChatCompletionsAsync);
+        app.MapGet("/v1/models", GetModelsAsync);
         app.MapGet("/projects/{projectId:guid}/ai-usage", GetProjectAIUsageAsync);
 
         return app;
     }
+
+    private static IResult GetModelsAsync() =>
+        Results.Ok(new
+        {
+            @object = "list",
+            data = new[]
+            {
+                new { id = "meta-llama/llama-3.3-70b-instruct:free", @object = "model", owned_by = "meta" },
+                new { id = "deepseek/deepseek-r1:free", @object = "model", owned_by = "deepseek" },
+                new { id = "deepseek/deepseek-chat:free", @object = "model", owned_by = "deepseek" },
+                new { id = "qwen/qwen-2.5-coder-32b-instruct:free", @object = "model", owned_by = "qwen" },
+                new { id = "google/gemini-2.0-flash-exp:free", @object = "model", owned_by = "google" },
+                new { id = "google/gemini-2.0-flash-thinking-exp:free", @object = "model", owned_by = "google" },
+                new { id = "mistralai/mistral-7b-instruct:free", @object = "model", owned_by = "mistralai" }
+            }
+        });
 
     private static async Task<IResult> HandleChatCompletionsAsync(
         HttpContext httpContext,
