@@ -83,6 +83,20 @@ public static class GatewayEndpoints
         }
 
         var result = await providerClient.CompleteChatAsync(effectiveRequest, cancellationToken);
+
+        if (!result.Succeeded
+            && !string.Equals(effectiveRequest.Model, "openrouter/free", StringComparison.OrdinalIgnoreCase)
+            && effectiveRequest.Model.EndsWith(":free", StringComparison.OrdinalIgnoreCase))
+        {
+            var fallbackRequest = effectiveRequest with { Model = "openrouter/free" };
+            var fallbackResult = await providerClient.CompleteChatAsync(fallbackRequest, cancellationToken);
+            if (fallbackResult.Succeeded)
+            {
+                result = fallbackResult;
+                effectiveRequest = fallbackRequest;
+            }
+        }
+
         var now = DateTimeOffset.UtcNow;
 
         if (!result.Succeeded)
@@ -219,6 +233,20 @@ public static class GatewayEndpoints
         }
 
         var result = await providerClient.CompleteResponsesAsync(bodyJson, isStream, cancellationToken);
+
+        if (!result.Succeeded
+            && !string.Equals(model, "openrouter/free", StringComparison.OrdinalIgnoreCase)
+            && model.EndsWith(":free", StringComparison.OrdinalIgnoreCase))
+        {
+            var fallbackJson = System.Text.RegularExpressions.Regex.Replace(bodyJson, "\"model\"\\s*:\\s*\"[^\"]+\"", "\"model\":\"openrouter/free\"");
+            var fallbackResult = await providerClient.CompleteResponsesAsync(fallbackJson, isStream, cancellationToken);
+            if (fallbackResult.Succeeded)
+            {
+                result = fallbackResult;
+                model = "openrouter/free";
+            }
+        }
+
         var now = DateTimeOffset.UtcNow;
 
         if (!result.Succeeded)
