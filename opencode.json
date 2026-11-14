@@ -17,7 +17,7 @@
       "npm": "@ai-sdk/openai",
       "name": "OSSFuel",
       "options": {
-        "baseURL": "https://ossfuel-api.calmisland-1f33440c.francecentral.azurecontainerapps.io/v1",
+        "baseURL": "https://api.ossfuel.louayhouimli.dev/v1",
         "apiKey": "{env:OSSFUEL_API_KEY}",
         "compatibility": "compatible"
       },

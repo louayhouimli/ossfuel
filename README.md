@@ -42,7 +42,7 @@ The repository contains:
 - **Maintainer Dashboard & Audit Logs**:
   - Web UI for generating and revoking keys.
   - Real-time token usage logs showing prompt tokens, completion tokens, and dollar deductions.
-- **Test Suite**: 126 automated tests (21 unit tests and 105 integration tests) covering all authentication, funding, gateway, and ledger flows.
+- **Test Suite**: 127 automated tests (21 unit tests and 106 integration tests) covering all authentication, funding, gateway, and ledger flows.
 
 ## Architecture
 
@@ -94,14 +94,19 @@ docs/          Specifications, design docs, and implementation plans
 Configure your AI coding tool to point to OSSFuel with a project API key:
 
 ```bash
-OPENAI_API_BASE=http://localhost:5000/v1
+# Production:
+OPENAI_API_BASE=https://api.ossfuel.louayhouimli.dev/v1
+OPENAI_API_KEY=ossf_your_api_key_here
+
+# Local Development:
+OPENAI_API_BASE=http://localhost:5050/v1
 OPENAI_API_KEY=ossf_your_api_key_here
 ```
 
 ### Example curl request
 
 ```bash
-curl http://localhost:5000/v1/chat/completions \
+curl https://api.ossfuel.louayhouimli.dev/v1/chat/completions \
   -H "Authorization: Bearer ossf_your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
