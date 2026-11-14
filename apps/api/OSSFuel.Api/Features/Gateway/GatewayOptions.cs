@@ -9,4 +9,6 @@ public sealed class GatewayOptions
     public string BaseUrl { get; set; } = "https://openrouter.ai/api/v1";
 
     public string? ApiKey { get; set; }
+
+    public string? WebAppUrl { get; set; }
 }

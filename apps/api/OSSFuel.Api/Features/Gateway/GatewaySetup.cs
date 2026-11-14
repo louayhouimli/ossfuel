@@ -8,6 +8,13 @@ public static class GatewaySetup
         IHostEnvironment environment)
     {
         services.Configure<GatewayOptions>(configuration.GetSection(GatewayOptions.SectionName));
+        services.PostConfigure<GatewayOptions>(options =>
+        {
+            if (string.IsNullOrWhiteSpace(options.WebAppUrl))
+            {
+                options.WebAppUrl = configuration["WebAppUrl"];
+            }
+        });
 
         var provider = configuration["Gateway:Provider"];
         var apiKey = configuration["Gateway:ApiKey"];

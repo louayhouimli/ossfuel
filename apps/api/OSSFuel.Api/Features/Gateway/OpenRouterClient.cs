@@ -27,14 +27,7 @@ public sealed class OpenRouterClient(
         var endpoint = $"{config.BaseUrl.TrimEnd('/')}/chat/completions";
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
-
-        if (!string.IsNullOrWhiteSpace(config.ApiKey))
-        {
-            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
-        }
-
-        httpRequest.Headers.TryAddWithoutValidation("HTTP-Referer", "https://ossfuel-web.vercel.app");
-        httpRequest.Headers.TryAddWithoutValidation("X-Title", "OSSFuel");
+        ApplyRequestHeaders(httpRequest, config);
 
         var requestNode = JsonSerializer.SerializeToNode(request, SerializerOptions)?.AsObject() ?? new JsonObject();
         if (request.Stream && !requestNode.ContainsKey("stream_options"))
@@ -202,14 +195,7 @@ public sealed class OpenRouterClient(
         var endpoint = $"{config.BaseUrl.TrimEnd('/')}/responses";
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
-
-        if (!string.IsNullOrWhiteSpace(config.ApiKey))
-        {
-            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
-        }
-
-        httpRequest.Headers.TryAddWithoutValidation("HTTP-Referer", "https://ossfuel-web.vercel.app");
-        httpRequest.Headers.TryAddWithoutValidation("X-Title", "OSSFuel");
+        ApplyRequestHeaders(httpRequest, config);
 
         httpRequest.Content = new StringContent(
             requestJson,
@@ -345,14 +331,7 @@ public sealed class OpenRouterClient(
             var config = options.Value;
             var endpoint = $"{config.BaseUrl.TrimEnd('/')}/models";
             using var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
-
-            if (!string.IsNullOrWhiteSpace(config.ApiKey))
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
-            }
-
-            request.Headers.TryAddWithoutValidation("HTTP-Referer", "https://ossfuel-web.vercel.app");
-            request.Headers.TryAddWithoutValidation("X-Title", "OSSFuel");
+            ApplyRequestHeaders(request, config);
 
             using var response = await httpClient.SendAsync(request, cancellationToken);
             if (response.IsSuccessStatusCode)
@@ -382,6 +361,21 @@ public sealed class OpenRouterClient(
         {
             _modelsLock.Release();
         }
+    }
+
+    private static void ApplyRequestHeaders(HttpRequestMessage request, GatewayOptions config)
+    {
+        if (!string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
+        }
+
+        if (!string.IsNullOrWhiteSpace(config.WebAppUrl))
+        {
+            request.Headers.TryAddWithoutValidation("HTTP-Referer", config.WebAppUrl);
+        }
+
+        request.Headers.TryAddWithoutValidation("X-Title", "OSSFuel");
     }
 
     private const string FallbackModelsJson = """
