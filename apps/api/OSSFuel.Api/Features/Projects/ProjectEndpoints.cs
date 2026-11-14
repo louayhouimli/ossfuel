@@ -15,12 +15,14 @@ public static class ProjectEndpoints
 
     public static IEndpointRouteBuilder MapProjectEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/projects", GetProjectsAsync);
-        app.MapGet("/projects/{id:guid}", GetProjectAsync);
-        app.MapPost("/projects", CreateProjectAsync).RequireAuthorization();
-        app.MapDelete("/projects/{id:guid}", DeleteProjectAsync).RequireAuthorization();
-        app.MapPost("/projects/{id:guid}/refresh", RefreshProjectAsync).RequireAuthorization();
-        app.MapGet("/repos/available", GetAvailableRepositoriesAsync).RequireAuthorization();
+        var group = app.MapGroup("").WithTags("Projects");
+
+        group.MapGet("/projects", GetProjectsAsync);
+        group.MapGet("/projects/{id:guid}", GetProjectAsync);
+        group.MapPost("/projects", CreateProjectAsync).RequireAuthorization();
+        group.MapDelete("/projects/{id:guid}", DeleteProjectAsync).RequireAuthorization();
+        group.MapPost("/projects/{id:guid}/refresh", RefreshProjectAsync).RequireAuthorization();
+        group.MapGet("/repos/available", GetAvailableRepositoriesAsync).RequireAuthorization();
 
         return app;
     }
@@ -320,7 +322,7 @@ public static class ProjectEndpoints
             return AlreadyRegisteredProblem();
         }
 
-        return Results.Created($"/projects/{project.Id}", ToResponse(project));
+        return Results.Created($"/api/v1/projects/{project.Id}", ToResponse(project));
     }
 
     private static IResult ReconnectProblem() =>

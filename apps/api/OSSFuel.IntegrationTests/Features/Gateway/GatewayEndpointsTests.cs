@@ -356,7 +356,7 @@ public class GatewayEndpointsTests : IDisposable
 
         // An unauthenticated client should be able to fetch the project's AI usage
         var unauthenticatedClient = _factory.CreateClient();
-        var usageResponse = await unauthenticatedClient.GetAsync($"/projects/{projectId}/ai-usage");
+        var usageResponse = await unauthenticatedClient.GetAsync($"/api/v1/projects/{projectId}/ai-usage");
 
         Assert.Equal(HttpStatusCode.OK, usageResponse.StatusCode);
         var usages = await usageResponse.Content.ReadFromJsonAsync<List<AIUsageSummaryResponse>>();

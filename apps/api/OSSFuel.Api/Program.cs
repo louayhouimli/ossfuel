@@ -65,13 +65,17 @@ app.UseCsrfProtection();
 
 await app.MigrateDatabaseAsync();
 
-app.MapAuthEndpoints();
+var v1 = app.MapGroup("/api/v1");
+
+v1.MapAuthEndpoints();
+v1.MapProjectEndpoints();
+v1.MapBalanceEndpoints();
+v1.MapFundingEndpoints(FundingSetup.UsesMockProvider(builder.Configuration, builder.Environment));
+v1.MapApiKeyEndpoints();
+v1.MapGatewayEndpoints();
+
 app.MapHealthEndpoints();
-app.MapProjectEndpoints();
-app.MapBalanceEndpoints();
-app.MapFundingEndpoints(FundingSetup.UsesMockProvider(builder.Configuration, builder.Environment));
-app.MapApiKeyEndpoints();
-app.MapGatewayEndpoints();
+app.MapOpenAiCompatEndpoints();
 
 app.Run();
 

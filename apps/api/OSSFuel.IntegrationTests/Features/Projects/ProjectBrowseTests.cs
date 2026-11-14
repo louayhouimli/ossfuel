@@ -17,7 +17,7 @@ public class ProjectBrowseTests : IDisposable
         factory.SeedProject(userId, gitHubRepoId: 2, fullName: "aaa/AlsoPopular", stars: 100);
         factory.SeedProject(userId, gitHubRepoId: 3, fullName: "mmm/Quiet", stars: 10);
 
-        var response = await factory.CreateClient().GetAsync("/projects?pageSize=50");
+        var response = await factory.CreateClient().GetAsync("/api/v1/projects?pageSize=50");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -34,7 +34,7 @@ public class ProjectBrowseTests : IDisposable
         var userId = factory.SeedUser();
         factory.SeedProject(userId, gitHubRepoId: 1, fullName: "aaa/One", stars: 3);
 
-        var response = await factory.CreateClient().GetAsync("/projects?page=0&pageSize=9999");
+        var response = await factory.CreateClient().GetAsync("/api/v1/projects?page=0&pageSize=9999");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -53,7 +53,7 @@ public class ProjectBrowseTests : IDisposable
         factory.SeedProject(userId, gitHubRepoId: 2, fullName: "bbb/Two", stars: 200);
         factory.SeedProject(userId, gitHubRepoId: 3, fullName: "ccc/Three", stars: 100);
 
-        var response = await factory.CreateClient().GetAsync("/projects?page=2&pageSize=2");
+        var response = await factory.CreateClient().GetAsync("/api/v1/projects?page=2&pageSize=2");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 

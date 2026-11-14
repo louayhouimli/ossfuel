@@ -10,11 +10,11 @@ public class AuthenticatedAuthTests : IDisposable
     public void Dispose() => factory.Dispose();
 
     [Fact]
-    public async Task GetValidate_WhenAuthenticated_ReturnsTheSignedInUser()
+    public async Task GetMe_WhenAuthenticated_ReturnsTheSignedInUser()
     {
         var userId = factory.SeedUser(login: "octocat");
 
-        var response = await factory.CreateClientFor(userId).GetAsync("/validate");
+        var response = await factory.CreateClientFor(userId).GetAsync("/api/v1/auth/me");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -25,18 +25,18 @@ public class AuthenticatedAuthTests : IDisposable
     }
 
     [Fact]
-    public async Task GetValidate_WhenTheSignedInUserNoLongerExists_ReturnsUnauthorized()
+    public async Task GetMe_WhenTheSignedInUserNoLongerExists_ReturnsUnauthorized()
     {
         // A cookie can outlive the row it points at.
-        var response = await factory.CreateClientFor(Guid.NewGuid()).GetAsync("/validate");
+        var response = await factory.CreateClientFor(Guid.NewGuid()).GetAsync("/api/v1/auth/me");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
-    public async Task PostLogout_ReturnsNoContent()
+    public async Task PostSignOut_ReturnsNoContent()
     {
-        var response = await factory.CreateClient().PostAsync("/logout", null);
+        var response = await factory.CreateClient().PostAsync("/api/v1/auth/sign-out", null);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }

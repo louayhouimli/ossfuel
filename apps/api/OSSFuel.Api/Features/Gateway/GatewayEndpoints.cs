@@ -10,13 +10,23 @@ public static class GatewayEndpoints
 {
     public static IEndpointRouteBuilder MapGatewayEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/v1/chat/completions", HandleChatCompletionsAsync);
-        app.MapPost("/api/v1/chat/completions", HandleChatCompletionsAsync);
-        app.MapPost("/v1/responses", HandleResponsesAsync);
-        app.MapPost("/api/v1/responses", HandleResponsesAsync);
-        app.MapGet("/v1/models", GetModelsAsync);
-        app.MapGet("/api/v1/models", GetModelsAsync);
-        app.MapGet("/projects/{projectId:guid}/ai-usage", GetProjectAIUsageAsync);
+        var group = app.MapGroup("").WithTags("AI Gateway");
+
+        group.MapPost("/chat/completions", HandleChatCompletionsAsync);
+        group.MapPost("/responses", HandleResponsesAsync);
+        group.MapGet("/models", GetModelsAsync);
+        group.MapGet("/projects/{projectId:guid}/ai-usage", GetProjectAIUsageAsync);
+
+        return app;
+    }
+
+    public static IEndpointRouteBuilder MapOpenAiCompatEndpoints(this IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("").WithTags("AI Gateway");
+
+        group.MapPost("/v1/chat/completions", HandleChatCompletionsAsync);
+        group.MapPost("/v1/responses", HandleResponsesAsync);
+        group.MapGet("/v1/models", GetModelsAsync);
 
         return app;
     }

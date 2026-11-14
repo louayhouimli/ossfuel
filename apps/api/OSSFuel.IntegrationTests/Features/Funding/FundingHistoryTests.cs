@@ -30,7 +30,7 @@ public class FundingHistoryTests : IDisposable
             status: "succeeded");
         _factory.SeedFunding(firstProject, otherId, amountMinor: 3000);
 
-        var response = await _factory.CreateClientFor(sponsorId).GetAsync("/fundings");
+        var response = await _factory.CreateClientFor(sponsorId).GetAsync("/api/v1/fundings");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -47,7 +47,7 @@ public class FundingHistoryTests : IDisposable
     [Fact]
     public async Task GetFundings_WhenUnauthenticated_ReturnsUnauthorized()
     {
-        var response = await _factory.CreateClient().GetAsync("/fundings");
+        var response = await _factory.CreateClient().GetAsync("/api/v1/fundings");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -62,7 +62,7 @@ public class FundingHistoryTests : IDisposable
 
         var payload = await _factory
             .CreateClientFor(sponsorId)
-            .GetFromJsonAsync<FundingPayload>($"/fundings/{fundingId}");
+            .GetFromJsonAsync<FundingPayload>($"/api/v1/fundings/{fundingId}");
 
         Assert.NotNull(payload);
         Assert.Equal(fundingId, payload!.Id);
@@ -80,7 +80,7 @@ public class FundingHistoryTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         var fundingId = _factory.SeedFunding(projectId, sponsorId);
 
-        var response = await _factory.CreateClientFor(otherId).GetAsync($"/fundings/{fundingId}");
+        var response = await _factory.CreateClientFor(otherId).GetAsync($"/api/v1/fundings/{fundingId}");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -92,7 +92,7 @@ public class FundingHistoryTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .GetAsync($"/fundings/{Guid.NewGuid()}");
+            .GetAsync($"/api/v1/fundings/{Guid.NewGuid()}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }

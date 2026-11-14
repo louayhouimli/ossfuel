@@ -1,6 +1,8 @@
 export const API_URL: string =
   import.meta.env.VITE_API_URL ?? "http://localhost:5050"
 
+export const API_V1_URL = `${API_URL}/api/v1`
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -22,7 +24,7 @@ export async function apiFetch<T>(
     headers.set("Content-Type", "application/json")
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${API_V1_URL}${path}`, {
     credentials: "include",
     ...init,
     headers,

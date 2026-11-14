@@ -7,9 +7,9 @@ public class AuthTests(OSSFuelWebApplicationFactory factory) : IClassFixture<OSS
     private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
-    public async Task GetValidate_WhenUnauthenticated_ReturnsUnauthorized()
+    public async Task GetMe_WhenUnauthenticated_ReturnsUnauthorized()
     {
-        var response = await _client.GetAsync("/validate");
+        var response = await _client.GetAsync("/api/v1/auth/me");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

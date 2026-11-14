@@ -19,7 +19,7 @@ public class CsrfProtectionTests : IDisposable
         // Set user auth cookie header, but do NOT set X-OSSFuel-Client header
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
 
-        var response = await client.PostAsJsonAsync("/projects", new { gitHubRepoId = 1296269 });
+        var response = await client.PostAsJsonAsync("/api/v1/projects", new { gitHubRepoId = 1296269 });
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
@@ -38,7 +38,7 @@ public class CsrfProtectionTests : IDisposable
         client.DefaultRequestHeaders.Add("X-OSSFuel-Client", "web");
 
         // Request will pass CSRF check (may fail validation or repo lookup, but not 403 Forbidden CSRF)
-        var response = await client.PostAsJsonAsync("/projects", new { gitHubRepoId = 1296269 });
+        var response = await client.PostAsJsonAsync("/api/v1/projects", new { gitHubRepoId = 1296269 });
 
         Assert.NotEqual(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -50,7 +50,7 @@ public class CsrfProtectionTests : IDisposable
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, userId.ToString());
 
-        var response = await client.GetAsync("/projects");
+        var response = await client.GetAsync("/api/v1/projects");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

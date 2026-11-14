@@ -18,7 +18,7 @@ public class MockCompletionTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync($"/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
+            .PostAsJsonAsync($"/api/v1/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -42,9 +42,9 @@ public class MockCompletionTests : IDisposable
         var (sponsorId, projectId, fundingId) = SeedPendingFunding();
         var client = _factory.CreateClientFor(sponsorId);
 
-        await client.PostAsJsonAsync($"/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
+        await client.PostAsJsonAsync($"/api/v1/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
         var second = await client.PostAsJsonAsync(
-            $"/fundings/{fundingId}/mock-complete",
+            $"/api/v1/fundings/{fundingId}/mock-complete",
             new { outcome = "succeeded" });
 
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
@@ -59,7 +59,7 @@ public class MockCompletionTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync($"/fundings/{fundingId}/mock-complete", new { outcome = "failed" });
+            .PostAsJsonAsync($"/api/v1/fundings/{fundingId}/mock-complete", new { outcome = "failed" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -79,7 +79,7 @@ public class MockCompletionTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync($"/fundings/{fundingId}/mock-complete", new { outcome = "cancelled" });
+            .PostAsJsonAsync($"/api/v1/fundings/{fundingId}/mock-complete", new { outcome = "cancelled" });
 
         var payload = await response.Content.ReadFromJsonAsync<FundingPayload>();
         Assert.Equal("cancelled", payload!.Status);
@@ -93,9 +93,9 @@ public class MockCompletionTests : IDisposable
         var (sponsorId, projectId, fundingId) = SeedPendingFunding();
         var client = _factory.CreateClientFor(sponsorId);
 
-        await client.PostAsJsonAsync($"/fundings/{fundingId}/mock-complete", new { outcome = "failed" });
+        await client.PostAsJsonAsync($"/api/v1/fundings/{fundingId}/mock-complete", new { outcome = "failed" });
         var response = await client.PostAsJsonAsync(
-            $"/fundings/{fundingId}/mock-complete",
+            $"/api/v1/fundings/{fundingId}/mock-complete",
             new { outcome = "succeeded" });
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -113,7 +113,7 @@ public class MockCompletionTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(otherId)
-            .PostAsJsonAsync($"/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
+            .PostAsJsonAsync($"/api/v1/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal(0, _factory.BalanceOf(projectId));
@@ -126,7 +126,7 @@ public class MockCompletionTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync($"/fundings/{fundingId}/mock-complete", new { outcome = "maybe" });
+            .PostAsJsonAsync($"/api/v1/fundings/{fundingId}/mock-complete", new { outcome = "maybe" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal(
@@ -141,7 +141,7 @@ public class MockCompletionTests : IDisposable
 
         var response = await _factory
             .CreateClient()
-            .PostAsJsonAsync($"/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
+            .PostAsJsonAsync($"/api/v1/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -153,7 +153,7 @@ public class MockCompletionTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync($"/fundings/{Guid.NewGuid()}/mock-complete", new { outcome = "succeeded" });
+            .PostAsJsonAsync($"/api/v1/fundings/{Guid.NewGuid()}/mock-complete", new { outcome = "succeeded" });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -170,7 +170,7 @@ public class MockCompletionTests : IDisposable
 
         await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync($"/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
+            .PostAsJsonAsync($"/api/v1/fundings/{fundingId}/mock-complete", new { outcome = "succeeded" });
 
         Assert.Equal(3500, _factory.BalanceOf(projectId));
     }

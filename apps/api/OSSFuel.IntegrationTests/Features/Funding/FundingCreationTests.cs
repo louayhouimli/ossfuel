@@ -19,7 +19,7 @@ public class FundingCreationTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync("/fundings", new { projectId, amountMinor = 2500 });
+            .PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 2500 });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -31,7 +31,7 @@ public class FundingCreationTests : IDisposable
         Assert.Equal("usd", payload.Currency);
         Assert.Equal("pending", payload.Status);
         Assert.StartsWith("https://payments.test/checkout/", payload.CheckoutUrl);
-        Assert.Equal($"/fundings/{payload.Id}", response.Headers.Location?.ToString());
+        Assert.Equal($"/api/v1/fundings/{payload.Id}", response.Headers.Location?.ToString());
 
         var stored = _factory.ReadDb(db => db.Fundings.Single(funding => funding.Id == payload.Id));
         Assert.Equal(FundingStatus.Pending, stored.Status);
@@ -46,7 +46,7 @@ public class FundingCreationTests : IDisposable
 
         var response = await _factory
             .CreateClient()
-            .PostAsJsonAsync("/fundings", new { projectId, amountMinor = 2500 });
+            .PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 2500 });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -64,7 +64,7 @@ public class FundingCreationTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync("/fundings", new { projectId, amountMinor });
+            .PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Empty(_factory.ReadDb(db => db.Fundings.ToList()));
@@ -77,7 +77,7 @@ public class FundingCreationTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync("/fundings", new { projectId = Guid.NewGuid(), amountMinor = 2500 });
+            .PostAsJsonAsync("/api/v1/fundings", new { projectId = Guid.NewGuid(), amountMinor = 2500 });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -92,7 +92,7 @@ public class FundingCreationTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync("/fundings", new { projectId, amountMinor = 2500 });
+            .PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 2500 });
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Empty(_factory.ReadDb(db => db.Fundings.ToList()));
@@ -108,7 +108,7 @@ public class FundingCreationTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(sponsorId)
-            .PostAsJsonAsync("/fundings", new { projectId, amountMinor = 2500 });
+            .PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 2500 });
 
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
 
@@ -125,10 +125,10 @@ public class FundingCreationTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         var client = _factory.CreateClientFor(sponsorId);
 
-        var first = await client.PostAsJsonAsync("/fundings", new { projectId, amountMinor = 2500 });
+        var first = await client.PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 2500 });
         var firstPayload = await first.Content.ReadFromJsonAsync<FundingPayload>();
 
-        var second = await client.PostAsJsonAsync("/fundings", new { projectId, amountMinor = 2500 });
+        var second = await client.PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 2500 });
         var secondPayload = await second.Content.ReadFromJsonAsync<FundingPayload>();
 
         Assert.Equal(HttpStatusCode.OK, second.StatusCode);
@@ -146,16 +146,16 @@ public class FundingCreationTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         var client = _factory.CreateClientFor(sponsorId);
 
-        var createResponse = await client.PostAsJsonAsync("/fundings", new { projectId, amountMinor = 2500 });
+        var createResponse = await client.PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 2500 });
         var created = await createResponse.Content.ReadFromJsonAsync<FundingPayload>();
 
-        var cancelResponse = await client.PostAsync($"/fundings/{created!.Id}/cancel", null);
+        var cancelResponse = await client.PostAsync($"/api/v1/fundings/{created!.Id}/cancel", null);
         Assert.Equal(HttpStatusCode.OK, cancelResponse.StatusCode);
 
         var cancelled = await cancelResponse.Content.ReadFromJsonAsync<FundingPayload>();
         Assert.Equal("cancelled", cancelled!.Status);
 
-        var newResponse = await client.PostAsJsonAsync("/fundings", new { projectId, amountMinor = 5000 });
+        var newResponse = await client.PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 5000 });
         Assert.Equal(HttpStatusCode.Created, newResponse.StatusCode);
 
         var newFunding = await newResponse.Content.ReadFromJsonAsync<FundingPayload>();
@@ -170,9 +170,9 @@ public class FundingCreationTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         var client = _factory.CreateClientFor(sponsorId);
 
-        await client.PostAsJsonAsync("/fundings", new { projectId, amountMinor = 2500 });
+        await client.PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 2500 });
 
-        var response = await client.PostAsJsonAsync("/fundings", new { projectId, amountMinor = 5000 });
+        var response = await client.PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 5000 });
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Single(_factory.ReadDb(db => db.Fundings.ToList()));

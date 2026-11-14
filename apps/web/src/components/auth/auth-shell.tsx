@@ -6,7 +6,7 @@ import { API_URL } from "@/lib/api"
 export function AuthShell() {
   const handleSignIn = () => {
     const returnUrl = encodeURIComponent("/dashboard")
-    window.location.href = `${API_URL}/login?returnUrl=${returnUrl}`
+    window.location.href = `${API_URL}/api/v1/auth/sign-in?returnUrl=${returnUrl}`
   }
 
   return (

@@ -11,7 +11,7 @@ public class ProjectEndpointsTests(ProjectsWebApplicationFactory factory)
     [Fact]
     public async Task GetProjects_WhenNoProjectsExist_ReturnsEmptyList()
     {
-        var response = await _client.GetAsync("/projects");
+        var response = await _client.GetAsync("/api/v1/projects");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -24,7 +24,7 @@ public class ProjectEndpointsTests(ProjectsWebApplicationFactory factory)
     [Fact]
     public async Task GetProject_WhenProjectDoesNotExist_ReturnsNotFound()
     {
-        var response = await _client.GetAsync($"/projects/{Guid.NewGuid()}");
+        var response = await _client.GetAsync($"/api/v1/projects/{Guid.NewGuid()}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -32,7 +32,7 @@ public class ProjectEndpointsTests(ProjectsWebApplicationFactory factory)
     [Fact]
     public async Task PostProjects_WhenUnauthenticated_ReturnsUnauthorized()
     {
-        var response = await _client.PostAsJsonAsync("/projects", new { fullName = "octocat/Hello-World" });
+        var response = await _client.PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/Hello-World" });
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -40,7 +40,7 @@ public class ProjectEndpointsTests(ProjectsWebApplicationFactory factory)
     [Fact]
     public async Task GetAvailableRepositories_WhenUnauthenticated_ReturnsUnauthorized()
     {
-        var response = await _client.GetAsync("/repos/available");
+        var response = await _client.GetAsync("/api/v1/repos/available");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }

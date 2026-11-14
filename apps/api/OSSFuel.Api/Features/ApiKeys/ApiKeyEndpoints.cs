@@ -9,9 +9,11 @@ public static class ApiKeyEndpoints
 {
     public static IEndpointRouteBuilder MapApiKeyEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/projects/{projectId:guid}/api-keys", GetProjectApiKeysAsync).RequireAuthorization();
-        app.MapPost("/projects/{projectId:guid}/api-keys", CreateProjectApiKeyAsync).RequireAuthorization();
-        app.MapDelete("/projects/{projectId:guid}/api-keys/{keyId:guid}", RevokeProjectApiKeyAsync).RequireAuthorization();
+        var group = app.MapGroup("").WithTags("API Keys");
+
+        group.MapGet("/projects/{projectId:guid}/api-keys", GetProjectApiKeysAsync).RequireAuthorization();
+        group.MapPost("/projects/{projectId:guid}/api-keys", CreateProjectApiKeyAsync).RequireAuthorization();
+        group.MapDelete("/projects/{projectId:guid}/api-keys/{keyId:guid}", RevokeProjectApiKeyAsync).RequireAuthorization();
 
         return app;
     }
@@ -121,7 +123,7 @@ public static class ApiKeyEndpoints
         await db.SaveChangesAsync(cancellationToken);
 
         return Results.Created(
-            $"/projects/{projectId}/api-keys/{apiKey.Id}",
+            $"/api/v1/projects/{projectId}/api-keys/{apiKey.Id}",
             new CreateApiKeyResponse(
                 apiKey.Id,
                 apiKey.ProjectId,

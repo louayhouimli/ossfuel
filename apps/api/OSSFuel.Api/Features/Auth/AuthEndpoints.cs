@@ -11,7 +11,9 @@ public static class AuthEndpoints
 {
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/login", (string? returnUrl, IConfiguration configuration) =>
+        var group = app.MapGroup("/auth").WithTags("Auth");
+
+        group.MapGet("/sign-in", (string? returnUrl, IConfiguration configuration) =>
             Results.Challenge(
                 new AuthenticationProperties
                 {
@@ -20,13 +22,13 @@ public static class AuthEndpoints
                 [GitHubAuthenticationDefaults.AuthenticationScheme]))
             .RequireRateLimiting(RateLimitingSetup.AuthPolicy);
 
-        app.MapPost("/logout", async (HttpContext httpContext) =>
+        group.MapPost("/sign-out", async (HttpContext httpContext) =>
         {
             await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Results.NoContent();
         });
 
-        app.MapGet("/validate", async (ClaimsPrincipal principal, OSSFuelDbContext db, CancellationToken cancellationToken) =>
+        group.MapGet("/me", async (ClaimsPrincipal principal, OSSFuelDbContext db, CancellationToken cancellationToken) =>
         {
             var userId = Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var id)
                 ? id

@@ -17,11 +17,11 @@ public class ProjectManagementTests : IDisposable
         var ownerId = _factory.SeedUser();
         var projectId = _factory.SeedProject(ownerId);
 
-        var response = await _factory.CreateClientFor(ownerId).DeleteAsync($"/projects/{projectId}");
+        var response = await _factory.CreateClientFor(ownerId).DeleteAsync($"/api/v1/projects/{projectId}");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        var reread = await _factory.CreateClient().GetAsync($"/projects/{projectId}");
+        var reread = await _factory.CreateClient().GetAsync($"/api/v1/projects/{projectId}");
         Assert.Equal(HttpStatusCode.NotFound, reread.StatusCode);
     }
 
@@ -32,11 +32,11 @@ public class ProjectManagementTests : IDisposable
         var otherId = _factory.SeedUser(login: "someone-else");
         var projectId = _factory.SeedProject(ownerId);
 
-        var response = await _factory.CreateClientFor(otherId).DeleteAsync($"/projects/{projectId}");
+        var response = await _factory.CreateClientFor(otherId).DeleteAsync($"/api/v1/projects/{projectId}");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
-        var reread = await _factory.CreateClient().GetAsync($"/projects/{projectId}");
+        var reread = await _factory.CreateClient().GetAsync($"/api/v1/projects/{projectId}");
         Assert.Equal(HttpStatusCode.OK, reread.StatusCode);
     }
 
@@ -45,7 +45,7 @@ public class ProjectManagementTests : IDisposable
     {
         var userId = _factory.SeedUser();
 
-        var response = await _factory.CreateClientFor(userId).DeleteAsync($"/projects/{Guid.NewGuid()}");
+        var response = await _factory.CreateClientFor(userId).DeleteAsync($"/api/v1/projects/{Guid.NewGuid()}");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -58,11 +58,11 @@ public class ProjectManagementTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         var fundingId = _factory.SeedFunding(projectId, sponsorId, status: "succeeded");
 
-        var response = await _factory.CreateClientFor(ownerId).DeleteAsync($"/projects/{projectId}");
+        var response = await _factory.CreateClientFor(ownerId).DeleteAsync($"/api/v1/projects/{projectId}");
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
-        var reread = await _factory.CreateClient().GetAsync($"/projects/{projectId}");
+        var reread = await _factory.CreateClient().GetAsync($"/api/v1/projects/{projectId}");
         Assert.Equal(HttpStatusCode.OK, reread.StatusCode);
         Assert.True(_factory.ReadDb(db => db.Fundings.Any(funding => funding.Id == fundingId)));
     }
@@ -73,7 +73,7 @@ public class ProjectManagementTests : IDisposable
         var ownerId = _factory.SeedUser();
         var projectId = _factory.SeedProject(ownerId);
 
-        var response = await _factory.CreateClient().DeleteAsync($"/projects/{projectId}");
+        var response = await _factory.CreateClient().DeleteAsync($"/api/v1/projects/{projectId}");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -87,7 +87,7 @@ public class ProjectManagementTests : IDisposable
         var projectId = _factory.SeedProject(ownerId, stars: 10);
         _factory.GitHub.Repository = TestRepository.Create(stars: 4821, description: "Refreshed");
 
-        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/projects/{projectId}/refresh", null);
+        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/api/v1/projects/{projectId}/refresh", null);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -106,7 +106,7 @@ public class ProjectManagementTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         _factory.GitHub.Repository = TestRepository.Create();
 
-        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/projects/{projectId}/refresh", null);
+        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/api/v1/projects/{projectId}/refresh", null);
         var payload = await response.Content.ReadFromJsonAsync<ProjectPayload>();
 
         Assert.NotNull(payload);
@@ -123,7 +123,7 @@ public class ProjectManagementTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         _factory.GitHub.Repository = TestRepository.Create();
 
-        var response = await _factory.CreateClientFor(otherId).PostAsync($"/projects/{projectId}/refresh", null);
+        var response = await _factory.CreateClientFor(otherId).PostAsync($"/api/v1/projects/{projectId}/refresh", null);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -135,11 +135,11 @@ public class ProjectManagementTests : IDisposable
         var projectId = _factory.SeedProject(ownerId, stars: 10);
         _factory.GitHub.Repository = null;
 
-        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/projects/{projectId}/refresh", null);
+        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/api/v1/projects/{projectId}/refresh", null);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
-        var payload = await _factory.CreateClient().GetFromJsonAsync<ProjectPayload>($"/projects/{projectId}");
+        var payload = await _factory.CreateClient().GetFromJsonAsync<ProjectPayload>($"/api/v1/projects/{projectId}");
         Assert.Equal(10, payload!.Stars);
     }
 
@@ -150,7 +150,7 @@ public class ProjectManagementTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         _factory.GitHub.GetException = new HttpRequestException("github is down");
 
-        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/projects/{projectId}/refresh", null);
+        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/api/v1/projects/{projectId}/refresh", null);
 
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
     }
@@ -162,7 +162,7 @@ public class ProjectManagementTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         _factory.GitHub.Repository = TestRepository.Create();
 
-        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/projects/{projectId}/refresh", null);
+        var response = await _factory.CreateClientFor(ownerId).PostAsync($"/api/v1/projects/{projectId}/refresh", null);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -172,7 +172,7 @@ public class ProjectManagementTests : IDisposable
     {
         var userId = _factory.SeedUser();
 
-        var response = await _factory.CreateClientFor(userId).PostAsync($"/projects/{Guid.NewGuid()}/refresh", null);
+        var response = await _factory.CreateClientFor(userId).PostAsync($"/api/v1/projects/{Guid.NewGuid()}/refresh", null);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -183,7 +183,7 @@ public class ProjectManagementTests : IDisposable
         var ownerId = _factory.SeedUser();
         var projectId = _factory.SeedProject(ownerId);
 
-        var response = await _factory.CreateClient().PostAsync($"/projects/{projectId}/refresh", null);
+        var response = await _factory.CreateClient().PostAsync($"/api/v1/projects/{projectId}/refresh", null);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -196,7 +196,7 @@ public class ProjectManagementTests : IDisposable
         var ownerId = _factory.SeedUser();
         var projectId = _factory.SeedProject(ownerId);
 
-        var payload = await _factory.CreateClient().GetFromJsonAsync<ProjectPayload>($"/projects/{projectId}");
+        var payload = await _factory.CreateClient().GetFromJsonAsync<ProjectPayload>($"/api/v1/projects/{projectId}");
 
         Assert.Equal(ownerId, payload!.OwnerUserId);
     }
@@ -211,7 +211,7 @@ public class ProjectManagementTests : IDisposable
 
         var response = await _factory
             .CreateClientFor(userId)
-            .PostAsJsonAsync("/projects", new { fullName = "octocat/Hello-World" });
+            .PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/Hello-World" });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -220,7 +220,7 @@ public class ProjectManagementTests : IDisposable
         Assert.Equal("octocat/Hello-World", payload!.FullName);
         Assert.Equal(4821, payload.Stars);
         Assert.Equal(userId, payload.OwnerUserId);
-        Assert.Equal($"/projects/{payload.Id}", response.Headers.Location?.ToString());
+        Assert.Equal($"/api/v1/projects/{payload.Id}", response.Headers.Location?.ToString());
     }
 
     private sealed record ProjectPayload(

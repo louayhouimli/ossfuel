@@ -13,7 +13,7 @@ public class BalanceCreationTests(ProjectsWebApplicationFactory factory)
         var client = factory.CreateClientFor(userId);
         factory.GitHub.Repository = TestRepository.Create(id: 4242, name: "new-project");
 
-        var response = await client.PostAsJsonAsync("/projects", new { fullName = "octocat/new-project" });
+        var response = await client.PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/new-project" });
         response.EnsureSuccessStatusCode();
         var project = await response.Content.ReadFromJsonAsync<ProjectPayload>();
 
@@ -29,11 +29,11 @@ public class BalanceCreationTests(ProjectsWebApplicationFactory factory)
         var client = factory.CreateClientFor(userId);
         factory.GitHub.Repository = TestRepository.Create(id: 4243, name: "twice-project");
 
-        var first = await client.PostAsJsonAsync("/projects", new { fullName = "octocat/twice-project" });
+        var first = await client.PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/twice-project" });
         first.EnsureSuccessStatusCode();
         var project = await first.Content.ReadFromJsonAsync<ProjectPayload>();
 
-        var second = await client.PostAsJsonAsync("/projects", new { fullName = "octocat/twice-project" });
+        var second = await client.PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/twice-project" });
 
         Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
 

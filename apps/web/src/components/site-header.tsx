@@ -44,7 +44,7 @@ export function SiteHeader() {
     setIsSigningOut(true)
 
     try {
-      await apiFetch("/logout", { method: "POST" })
+      await apiFetch("/auth/sign-out", { method: "POST" })
       queryClient.setQueryData(["auth", "user"], null)
       await queryClient.invalidateQueries({ queryKey: ["auth", "user"] })
       setMenuOpen(false)

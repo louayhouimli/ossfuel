@@ -10,11 +10,13 @@ public static class BalanceEndpoints
 
     public static IEndpointRouteBuilder MapBalanceEndpoints(this IEndpointRouteBuilder app)
     {
+        var group = app.MapGroup("").WithTags("Balances");
+
         // A balance is public project information, same as stars or topics.
         // The sponsor on each credit is public too; the sponsor's full funding
         // list stays private to their account.
-        app.MapGet("/projects/{id:guid}/balance", GetBalanceAsync);
-        app.MapGet("/projects/{id:guid}/balance/transactions", GetTransactionsAsync);
+        group.MapGet("/projects/{id:guid}/balance", GetBalanceAsync);
+        group.MapGet("/projects/{id:guid}/balance/transactions", GetTransactionsAsync);
 
         return app;
     }

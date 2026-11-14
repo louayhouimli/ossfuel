@@ -18,7 +18,7 @@ public class ApiKeyEndpointsTests : IDisposable
         var projectId = Guid.NewGuid();
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync($"/projects/{projectId}/api-keys");
+        var response = await client.GetAsync($"/api/v1/projects/{projectId}/api-keys");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -31,7 +31,7 @@ public class ApiKeyEndpointsTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
 
         var client = _factory.CreateClientFor(otherId);
-        var response = await client.GetAsync($"/projects/{projectId}/api-keys");
+        var response = await client.GetAsync($"/api/v1/projects/{projectId}/api-keys");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -43,7 +43,7 @@ public class ApiKeyEndpointsTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
 
         var client = _factory.CreateClientFor(ownerId);
-        var response = await client.PostAsJsonAsync($"/projects/{projectId}/api-keys", new CreateApiKeyRequest("Dev Key"));
+        var response = await client.PostAsJsonAsync($"/api/v1/projects/{projectId}/api-keys", new CreateApiKeyRequest("Dev Key"));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -65,7 +65,7 @@ public class ApiKeyEndpointsTests : IDisposable
         });
 
         // Verify GET returns the key without raw secret
-        var listResponse = await client.GetAsync($"/projects/{projectId}/api-keys");
+        var listResponse = await client.GetAsync($"/api/v1/projects/{projectId}/api-keys");
         Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
         var list = await listResponse.Content.ReadFromJsonAsync<List<ApiKeySummaryResponse>>();
         Assert.NotNull(list);
@@ -83,7 +83,7 @@ public class ApiKeyEndpointsTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
 
         var client = _factory.CreateClientFor(otherId);
-        var response = await client.PostAsJsonAsync($"/projects/{projectId}/api-keys", new CreateApiKeyRequest("Hacker Key"));
+        var response = await client.PostAsJsonAsync($"/api/v1/projects/{projectId}/api-keys", new CreateApiKeyRequest("Hacker Key"));
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -95,11 +95,11 @@ public class ApiKeyEndpointsTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
 
         var client = _factory.CreateClientFor(ownerId);
-        var createResponse = await client.PostAsJsonAsync($"/projects/{projectId}/api-keys", new CreateApiKeyRequest("Temporary Key"));
+        var createResponse = await client.PostAsJsonAsync($"/api/v1/projects/{projectId}/api-keys", new CreateApiKeyRequest("Temporary Key"));
         var created = await createResponse.Content.ReadFromJsonAsync<CreateApiKeyResponse>();
         Assert.NotNull(created);
 
-        var deleteResponse = await client.DeleteAsync($"/projects/{projectId}/api-keys/{created.Id}");
+        var deleteResponse = await client.DeleteAsync($"/api/v1/projects/{projectId}/api-keys/{created.Id}");
         Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
 
         _factory.ReadDb(db =>
@@ -119,12 +119,12 @@ public class ApiKeyEndpointsTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
 
         var ownerClient = _factory.CreateClientFor(ownerId);
-        var createResponse = await ownerClient.PostAsJsonAsync($"/projects/{projectId}/api-keys", new CreateApiKeyRequest("My Key"));
+        var createResponse = await ownerClient.PostAsJsonAsync($"/api/v1/projects/{projectId}/api-keys", new CreateApiKeyRequest("My Key"));
         var created = await createResponse.Content.ReadFromJsonAsync<CreateApiKeyResponse>();
         Assert.NotNull(created);
 
         var otherClient = _factory.CreateClientFor(otherId);
-        var deleteResponse = await otherClient.DeleteAsync($"/projects/{projectId}/api-keys/{created.Id}");
+        var deleteResponse = await otherClient.DeleteAsync($"/api/v1/projects/{projectId}/api-keys/{created.Id}");
         Assert.Equal(HttpStatusCode.Forbidden, deleteResponse.StatusCode);
     }
 }

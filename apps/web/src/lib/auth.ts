@@ -14,7 +14,7 @@ export const authQueryOptions = () =>
     queryKey: ["auth", "user"],
     queryFn: async () => {
       try {
-        return await apiFetch<AuthUser>("/validate")
+        return await apiFetch<AuthUser>("/auth/me")
       } catch {
         return null
       }

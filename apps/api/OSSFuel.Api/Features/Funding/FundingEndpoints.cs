@@ -16,16 +16,18 @@ public static class FundingEndpoints
         this IEndpointRouteBuilder app,
         bool includeMockEndpoints)
     {
-        app.MapPost("/fundings", CreateFundingAsync)
+        var group = app.MapGroup("").WithTags("Funding");
+
+        group.MapPost("/fundings", CreateFundingAsync)
             .RequireAuthorization()
             .RequireRateLimiting(RateLimitingSetup.FundingCreatePolicy);
-        app.MapGet("/fundings", GetFundingsAsync).RequireAuthorization();
-        app.MapGet("/fundings/{id:guid}", GetFundingAsync).RequireAuthorization();
-        app.MapPost("/fundings/{id:guid}/cancel", CancelFundingAsync).RequireAuthorization();
+        group.MapGet("/fundings", GetFundingsAsync).RequireAuthorization();
+        group.MapGet("/fundings/{id:guid}", GetFundingAsync).RequireAuthorization();
+        group.MapPost("/fundings/{id:guid}/cancel", CancelFundingAsync).RequireAuthorization();
 
         if (includeMockEndpoints)
         {
-            app.MapPost("/fundings/{id:guid}/mock-complete", CompleteMockPaymentAsync).RequireAuthorization();
+            group.MapPost("/fundings/{id:guid}/mock-complete", CompleteMockPaymentAsync).RequireAuthorization();
         }
 
         return app;
@@ -116,7 +118,7 @@ public static class FundingEndpoints
         }
 
         return Results.Created(
-            $"/fundings/{funding.Id}",
+            $"/api/v1/fundings/{funding.Id}",
             ToResponse(funding, project.FullName, includeCheckoutUrl: true));
     }
 

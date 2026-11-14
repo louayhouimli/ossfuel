@@ -48,7 +48,7 @@ public static class AuthSetup
             {
                 options.ClientId = gitHubClientId;
                 options.ClientSecret = gitHubClientSecret;
-                options.CallbackPath = "/signin-github";
+                options.CallbackPath = "/api/v1/auth/callback";
                 options.Scope.Add("read:user");
                 options.Scope.Add("user:email");
                 options.Scope.Add("public_repo");

@@ -16,7 +16,9 @@ public static class HealthEndpoints
     {
         app.MapHealthChecks("/health");
 
-        app.MapGet("/health/db", async (OSSFuelDbContext db) =>
+        var group = app.MapGroup("/health").WithTags("Health");
+
+        group.MapGet("/db", async (OSSFuelDbContext db) =>
         {
             try
             {
@@ -25,27 +27,23 @@ public static class HealthEndpoints
 
                 return Results.Ok(new { status = "health", database = "connected" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return Results.Problem(
-                detail: "An error occured while connecting to the database",
-                statusCode: StatusCodes.Status503ServiceUnavailable
-,
-                title: "Database unavailable");
+                    detail: "An error occured while connecting to the database",
+                    statusCode: StatusCodes.Status503ServiceUnavailable,
+                    title: "Database unavailable");
             }
         });
 
-        app.MapGet("/health/info", (IHostEnvironment env) =>
+        group.MapGet("/info", (IHostEnvironment env) =>
         {
             return Results.Ok(new
             {
                 environment = env.EnvironmentName,
                 utcNow = DateTimeOffset.UtcNow,
                 status = "alive"
-            }
-
-            );
-
+            });
         });
 
         return app;

@@ -20,7 +20,7 @@ public class RateLimitingTests : IDisposable
         // The auth policy allows 20 requests per 10s. Send 25 rapid requests.
         for (var i = 0; i < 25; i++)
         {
-            lastResponse = await client.GetAsync("/login");
+            lastResponse = await client.GetAsync("/api/v1/auth/sign-in");
             if (lastResponse.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 break;
@@ -50,7 +50,7 @@ public class RateLimitingTests : IDisposable
         // The funding-create policy allows 10 requests per 10s.
         for (var i = 0; i < 15; i++)
         {
-            lastResponse = await client.PostAsJsonAsync("/fundings", new
+            lastResponse = await client.PostAsJsonAsync("/api/v1/fundings", new
             {
                 projectId = project,
                 amountMinor = 2500,
@@ -70,7 +70,7 @@ public class RateLimitingTests : IDisposable
         var anotherUser = factory.SeedUser(login: "another-sponsor");
         var anotherClient = factory.CreateClientFor(anotherUser);
 
-        var anotherResponse = await anotherClient.PostAsJsonAsync("/fundings", new
+        var anotherResponse = await anotherClient.PostAsJsonAsync("/api/v1/fundings", new
         {
             projectId = project,
             amountMinor = 2500,

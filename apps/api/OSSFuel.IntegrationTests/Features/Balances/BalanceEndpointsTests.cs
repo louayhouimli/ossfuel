@@ -17,7 +17,7 @@ public class BalanceEndpointsTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
         _factory.SeedCredit(projectId, 2500);
 
-        var response = await _factory.CreateClient().GetAsync($"/projects/{projectId}/balance");
+        var response = await _factory.CreateClient().GetAsync($"/api/v1/projects/{projectId}/balance");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -31,7 +31,7 @@ public class BalanceEndpointsTests : IDisposable
     [Fact]
     public async Task GetBalance_ForAnUnknownProject_ReturnsNotFound()
     {
-        var response = await _factory.CreateClient().GetAsync($"/projects/{Guid.NewGuid()}/balance");
+        var response = await _factory.CreateClient().GetAsync($"/api/v1/projects/{Guid.NewGuid()}/balance");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -50,7 +50,7 @@ public class BalanceEndpointsTests : IDisposable
             return true;
         });
 
-        var response = await _factory.CreateClient().GetAsync($"/projects/{projectId}/balance");
+        var response = await _factory.CreateClient().GetAsync($"/api/v1/projects/{projectId}/balance");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(0, _factory.BalanceOf(projectId));
@@ -73,7 +73,7 @@ public class BalanceEndpointsTests : IDisposable
             DateTimeOffset.UtcNow.AddMinutes(-1));
 
         var response = await _factory.CreateClient()
-            .GetAsync($"/projects/{projectId}/balance/transactions");
+            .GetAsync($"/api/v1/projects/{projectId}/balance/transactions");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -98,7 +98,7 @@ public class BalanceEndpointsTests : IDisposable
         _factory.SeedFundingCredit(projectId);
 
         var response = await _factory.CreateClient()
-            .GetAsync($"/projects/{projectId}/balance/transactions");
+            .GetAsync($"/api/v1/projects/{projectId}/balance/transactions");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -122,7 +122,7 @@ public class BalanceEndpointsTests : IDisposable
         _factory.SeedCredit(projectId, 300, "Third", now.AddMinutes(-1));
 
         var response = await _factory.CreateClient()
-            .GetAsync($"/projects/{projectId}/balance/transactions?page=2&pageSize=2");
+            .GetAsync($"/api/v1/projects/{projectId}/balance/transactions?page=2&pageSize=2");
 
         var payload = await response.Content.ReadFromJsonAsync<TransactionListPayload>();
         Assert.NotNull(payload);
@@ -137,7 +137,7 @@ public class BalanceEndpointsTests : IDisposable
     public async Task GetTransactions_ForAnUnknownProject_ReturnsNotFound()
     {
         var response = await _factory.CreateClient()
-            .GetAsync($"/projects/{Guid.NewGuid()}/balance/transactions");
+            .GetAsync($"/api/v1/projects/{Guid.NewGuid()}/balance/transactions");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -149,7 +149,7 @@ public class BalanceEndpointsTests : IDisposable
         var projectId = _factory.SeedProject(ownerId);
 
         var response = await _factory.CreateClient()
-            .GetAsync($"/projects/{projectId}/balance/transactions");
+            .GetAsync($"/api/v1/projects/{projectId}/balance/transactions");
 
         var payload = await response.Content.ReadFromJsonAsync<TransactionListPayload>();
         Assert.NotNull(payload);

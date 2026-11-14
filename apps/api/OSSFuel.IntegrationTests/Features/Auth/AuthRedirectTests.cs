@@ -13,7 +13,7 @@ public class AuthRedirectTests(OSSFuelWebApplicationFactory factory) : IClassFix
             AllowAutoRedirect = false,
         });
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/login");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/sign-in");
         request.Headers.Add("X-Forwarded-Proto", "https");
         request.Headers.Add("X-Forwarded-Host", "ossfuel-api.example.com");
 
@@ -24,7 +24,7 @@ public class AuthRedirectTests(OSSFuelWebApplicationFactory factory) : IClassFix
         var location = response.Headers.Location?.ToString();
         Assert.NotNull(location);
         Assert.Contains(
-            Uri.EscapeDataString("https://ossfuel-api.example.com/signin-github"),
+            Uri.EscapeDataString("https://ossfuel-api.example.com/api/v1/auth/callback"),
             location);
     }
 }

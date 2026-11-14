@@ -23,7 +23,7 @@ public class ProjectImportTests : IDisposable
             TestRepository.Create(id: 222222, name: "Fresh-Repo"),
         ];
 
-        var response = await factory.CreateClientFor(userId).GetAsync("/repos/available");
+        var response = await factory.CreateClientFor(userId).GetAsync("/api/v1/repos/available");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -48,7 +48,7 @@ public class ProjectImportTests : IDisposable
         factory.SeedProject(owner, gitHubRepoId: 424242, fullName: "owner/Taken");
         factory.GitHub.Repositories = [TestRepository.Create(id: 424242, owner: "owner", name: "Taken")];
 
-        var response = await factory.CreateClientFor(other).GetAsync("/repos/available");
+        var response = await factory.CreateClientFor(other).GetAsync("/api/v1/repos/available");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -61,7 +61,7 @@ public class ProjectImportTests : IDisposable
     {
         var userId = factory.SeedUser(accessToken: null);
 
-        var response = await factory.CreateClientFor(userId).GetAsync("/repos/available");
+        var response = await factory.CreateClientFor(userId).GetAsync("/api/v1/repos/available");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
@@ -75,7 +75,7 @@ public class ProjectImportTests : IDisposable
         var userId = factory.SeedUser();
         factory.GitHub.ListException = new HttpRequestException("github is down");
 
-        var response = await factory.CreateClientFor(userId).GetAsync("/repos/available");
+        var response = await factory.CreateClientFor(userId).GetAsync("/api/v1/repos/available");
 
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
     }
@@ -86,7 +86,7 @@ public class ProjectImportTests : IDisposable
     public async Task PostProjects_WhenBodyIsNull_ReturnsValidationProblem()
     {
         var userId = factory.SeedUser();
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/projects")
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/projects")
         {
             Content = new StringContent("null", Encoding.UTF8, "application/json"),
         };
@@ -103,7 +103,7 @@ public class ProjectImportTests : IDisposable
 
         var response = await factory
             .CreateClientFor(userId)
-            .PostAsJsonAsync("/projects", new { fullName = "octocat" });
+            .PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
@@ -119,7 +119,7 @@ public class ProjectImportTests : IDisposable
 
         var response = await factory
             .CreateClientFor(userId)
-            .PostAsJsonAsync("/projects", new { fullName = "octocat/Hello-World" });
+            .PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/Hello-World" });
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
@@ -135,7 +135,7 @@ public class ProjectImportTests : IDisposable
 
         var response = await factory
             .CreateClientFor(userId)
-            .PostAsJsonAsync("/projects", new { fullName = "octocat/Hello-World" });
+            .PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/Hello-World" });
 
         Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
     }
@@ -148,7 +148,7 @@ public class ProjectImportTests : IDisposable
 
         var response = await factory
             .CreateClientFor(userId)
-            .PostAsJsonAsync("/projects", new { fullName = "octocat/Hello-World" });
+            .PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/Hello-World" });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -161,7 +161,7 @@ public class ProjectImportTests : IDisposable
 
         var response = await factory
             .CreateClientFor(userId)
-            .PostAsJsonAsync("/projects", new { fullName = "octocat/Hello-World" });
+            .PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/Hello-World" });
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
 
@@ -178,7 +178,7 @@ public class ProjectImportTests : IDisposable
 
         var response = await factory
             .CreateClientFor(userId)
-            .PostAsJsonAsync("/projects", new { fullName = "octocat/Hello-World" });
+            .PostAsJsonAsync("/api/v1/projects", new { fullName = "octocat/Hello-World" });
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
