@@ -23,7 +23,7 @@
       },
       "models": {
         "openrouter/free": {
-          "name": "Free Models Router"
+          "name": "OSSFuel Copilot"
         },
         "baidu/ernie-5.5-flash-preview:free": {
           "name": "Baidu: ERNIE-5.5-Flash-Preview (free)"

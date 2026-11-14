@@ -316,4 +316,53 @@ public class GatewayEndpointsTests : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+
+    [Fact]
+    public async Task GetProjectAIUsage_IsPublicAndReturnsUsageSummary()
+    {
+        var ownerId = _factory.SeedUser();
+        var projectId = _factory.SeedProject(ownerId);
+        _factory.SeedCredit(projectId, 1000);
+
+        var (rawKey, keyPrefix, keyHash) = ApiKeyHasher.GenerateKey();
+
+        _factory.ReadDb(db =>
+        {
+            var apiKey = ProjectApiKey.Create(
+                projectId,
+                ownerId,
+                "CliKey",
+                keyPrefix,
+                keyHash,
+                DateTimeOffset.UtcNow);
+
+            db.ProjectApiKeys.Add(apiKey);
+            db.SaveChanges();
+            return true;
+        });
+
+        var request = new ChatCompletionRequest(
+            Model: "openai/gpt-4o-mini",
+            Messages: [new ChatMessage("user", "Hello")]);
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions")
+        {
+            Content = JsonContent.Create(request)
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", rawKey);
+
+        var chatResponse = await _factory.CreateClient().SendAsync(httpRequest);
+        Assert.Equal(HttpStatusCode.OK, chatResponse.StatusCode);
+
+        // An unauthenticated client should be able to fetch the project's AI usage
+        var unauthenticatedClient = _factory.CreateClient();
+        var usageResponse = await unauthenticatedClient.GetAsync($"/projects/{projectId}/ai-usage");
+
+        Assert.Equal(HttpStatusCode.OK, usageResponse.StatusCode);
+        var usages = await usageResponse.Content.ReadFromJsonAsync<List<AIUsageSummaryResponse>>();
+        Assert.NotNull(usages);
+        Assert.Single(usages);
+        Assert.Equal("openai/gpt-4o-mini", usages[0].Model);
+        Assert.Equal(projectId, usages[0].ProjectId);
+    }
 }

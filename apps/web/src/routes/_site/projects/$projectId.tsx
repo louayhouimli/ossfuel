@@ -219,6 +219,8 @@ function ProjectDetailPage() {
             </div>
           </section>
 
+          <AIUsageAudit projectId={project.id} />
+
           <section className="mt-12" aria-labelledby="record-heading">
             <h2 id="record-heading" className={eyebrowItem}>
               Repository record
@@ -336,7 +338,6 @@ function ProjectDetailPage() {
               </p>
 
               <ApiKeysManager projectId={project.id} />
-              <AIUsageAudit projectId={project.id} />
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <button
