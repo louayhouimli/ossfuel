@@ -175,4 +175,145 @@ public class GatewayEndpointsTests : IDisposable
             return true;
         });
     }
+
+    [Fact]
+    public async Task PostChatCompletions_WhenApiKeyIsRevoked_Returns401Unauthorized()
+    {
+        var ownerId = _factory.SeedUser();
+        var projectId = _factory.SeedProject(ownerId);
+        _factory.SeedCredit(projectId, 500);
+
+        var (rawKey, keyPrefix, keyHash) = ApiKeyHasher.GenerateKey();
+
+        _factory.ReadDb(db =>
+        {
+            var apiKey = ProjectApiKey.Create(
+                projectId,
+                ownerId,
+                "RevokedKey",
+                keyPrefix,
+                keyHash,
+                DateTimeOffset.UtcNow);
+
+            apiKey.Revoke(DateTimeOffset.UtcNow);
+            db.ProjectApiKeys.Add(apiKey);
+            db.SaveChanges();
+            return true;
+        });
+
+        var request = new ChatCompletionRequest(
+            Model: "openai/gpt-4o-mini",
+            Messages: [new ChatMessage("user", "Hello")]);
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions")
+        {
+            Content = JsonContent.Create(request)
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", rawKey);
+
+        var response = await _factory.CreateClient().SendAsync(httpRequest);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostChatCompletions_WithStreaming_StreamsSSEChunks()
+    {
+        var ownerId = _factory.SeedUser();
+        var projectId = _factory.SeedProject(ownerId);
+        _factory.SeedCredit(projectId, 500);
+
+        var (rawKey, keyPrefix, keyHash) = ApiKeyHasher.GenerateKey();
+
+        _factory.ReadDb(db =>
+        {
+            var apiKey = ProjectApiKey.Create(
+                projectId,
+                ownerId,
+                "StreamKey",
+                keyPrefix,
+                keyHash,
+                DateTimeOffset.UtcNow);
+
+            db.ProjectApiKeys.Add(apiKey);
+            db.SaveChanges();
+            return true;
+        });
+
+        var request = new ChatCompletionRequest(
+            Model: "openai/gpt-4o-mini",
+            Messages: [new ChatMessage("user", "Hello stream")],
+            Stream: true);
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions")
+        {
+            Content = JsonContent.Create(request)
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", rawKey);
+
+        var response = await _factory.CreateClient().SendAsync(httpRequest);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/event-stream", response.Content.Headers.ContentType?.MediaType);
+
+        var streamContent = await response.Content.ReadAsStringAsync();
+        Assert.Contains("data: ", streamContent);
+        Assert.Contains("data: [DONE]", streamContent);
+    }
+
+    [Fact]
+    public async Task PostChatCompletions_WithToolsAndAgentPayload_PreservesParameters()
+    {
+        var ownerId = _factory.SeedUser();
+        var projectId = _factory.SeedProject(ownerId);
+        _factory.SeedCredit(projectId, 500);
+
+        var (rawKey, keyPrefix, keyHash) = ApiKeyHasher.GenerateKey();
+
+        _factory.ReadDb(db =>
+        {
+            var apiKey = ProjectApiKey.Create(
+                projectId,
+                ownerId,
+                "AgentKey",
+                keyPrefix,
+                keyHash,
+                DateTimeOffset.UtcNow);
+
+            db.ProjectApiKeys.Add(apiKey);
+            db.SaveChanges();
+            return true;
+        });
+
+        // Request payload simulating agent tool-calling format
+        var agentJson = """
+        {
+          "model": "openai/gpt-4o-mini",
+          "messages": [
+            { "role": "user", "content": "What is the weather?" }
+          ],
+          "tools": [
+            {
+              "type": "function",
+              "function": {
+                "name": "get_weather",
+                "description": "Get current weather",
+                "parameters": { "type": "object", "properties": { "location": { "type": "string" } } }
+              }
+            }
+          ],
+          "tool_choice": "auto"
+        }
+        """;
+
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "/v1/chat/completions")
+        {
+            Content = new StringContent(agentJson, System.Text.Encoding.UTF8, "application/json")
+        };
+        httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", rawKey);
+
+        var response = await _factory.CreateClient().SendAsync(httpRequest);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 }

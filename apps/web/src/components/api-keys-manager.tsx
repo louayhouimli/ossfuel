@@ -82,7 +82,7 @@ export function ApiKeysManager({ projectId }: { projectId: string }) {
             </button>
           </div>
           <div className="mt-3 text-xs text-muted-foreground">
-            Use with Aider: <code className="font-mono">OPENAI_API_BASE=https://api.ossfuel.dev/v1 OPENAI_API_KEY={newKey.keyPrefix}...</code>
+            Use with Aider: <code className="font-mono">OPENAI_API_BASE=https://api.ossfuel.dev/v1 OPENAI_API_KEY={newKey.rawKey}</code>
           </div>
         </div>
       ) : null}

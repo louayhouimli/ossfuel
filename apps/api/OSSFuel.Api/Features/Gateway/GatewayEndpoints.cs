@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.EntityFrameworkCore;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.ApiKeys;
@@ -82,14 +83,36 @@ public static class GatewayEndpoints
                 "insufficient_quota");
         }
 
-        var result = await providerClient.CompleteChatAsync(effectiveRequest, cancellationToken);
+        bool headersWritten = false;
+        async Task OnChunkAsync(string chunk)
+        {
+            if (!headersWritten)
+            {
+                httpContext.Response.StatusCode = StatusCodes.Status200OK;
+                httpContext.Response.ContentType = "text/event-stream";
+                httpContext.Response.Headers.CacheControl = "no-cache";
+                headersWritten = true;
+            }
+
+            await httpContext.Response.WriteAsync($"data: {chunk}\n\n", cancellationToken);
+            await httpContext.Response.Body.FlushAsync(cancellationToken);
+        }
+
+        var result = await providerClient.CompleteChatAsync(
+            effectiveRequest,
+            cancellationToken,
+            effectiveRequest.Stream ? OnChunkAsync : null);
 
         if (!result.Succeeded
             && !string.Equals(effectiveRequest.Model, "openrouter/free", StringComparison.OrdinalIgnoreCase)
             && effectiveRequest.Model.EndsWith(":free", StringComparison.OrdinalIgnoreCase))
         {
             var fallbackRequest = effectiveRequest with { Model = "openrouter/free" };
-            var fallbackResult = await providerClient.CompleteChatAsync(fallbackRequest, cancellationToken);
+            var fallbackResult = await providerClient.CompleteChatAsync(
+                fallbackRequest,
+                cancellationToken,
+                effectiveRequest.Stream ? OnChunkAsync : null);
+
             if (fallbackResult.Succeeded)
             {
                 result = fallbackResult;
@@ -154,15 +177,13 @@ public static class GatewayEndpoints
 
         await db.SaveChangesAsync(cancellationToken);
 
-        if (request.Stream && result.StreamChunks is { Count: > 0 })
+        if (effectiveRequest.Stream)
         {
-            httpContext.Response.StatusCode = StatusCodes.Status200OK;
-            httpContext.Response.ContentType = "text/event-stream";
-            httpContext.Response.Headers.CacheControl = "no-cache";
-
-            foreach (var chunk in result.StreamChunks)
+            if (!headersWritten)
             {
-                await httpContext.Response.WriteAsync($"data: {chunk}\n\n", cancellationToken);
+                httpContext.Response.StatusCode = StatusCodes.Status200OK;
+                httpContext.Response.ContentType = "text/event-stream";
+                httpContext.Response.Headers.CacheControl = "no-cache";
             }
 
             await httpContext.Response.WriteAsync("data: [DONE]\n\n", cancellationToken);
@@ -238,14 +259,49 @@ public static class GatewayEndpoints
                 "insufficient_quota");
         }
 
-        var result = await providerClient.CompleteResponsesAsync(bodyJson, isStream, cancellationToken);
+        bool headersWritten = false;
+        async Task OnChunkAsync(string chunk)
+        {
+            if (!headersWritten)
+            {
+                httpContext.Response.StatusCode = StatusCodes.Status200OK;
+                httpContext.Response.ContentType = "text/event-stream";
+                httpContext.Response.Headers.CacheControl = "no-cache";
+                headersWritten = true;
+            }
+
+            await httpContext.Response.WriteAsync($"data: {chunk}\n\n", cancellationToken);
+            await httpContext.Response.Body.FlushAsync(cancellationToken);
+        }
+
+        var result = await providerClient.CompleteResponsesAsync(
+            bodyJson,
+            isStream,
+            cancellationToken,
+            isStream ? OnChunkAsync : null);
 
         if (!result.Succeeded
             && !string.Equals(model, "openrouter/free", StringComparison.OrdinalIgnoreCase)
             && model.EndsWith(":free", StringComparison.OrdinalIgnoreCase))
         {
-            var fallbackJson = System.Text.RegularExpressions.Regex.Replace(bodyJson, "\"model\"\\s*:\\s*\"[^\"]+\"", "\"model\":\"openrouter/free\"");
-            var fallbackResult = await providerClient.CompleteResponsesAsync(fallbackJson, isStream, cancellationToken);
+            string fallbackJson = bodyJson;
+            try
+            {
+                var node = JsonNode.Parse(bodyJson);
+                if (node is JsonObject obj)
+                {
+                    obj["model"] = "openrouter/free";
+                    fallbackJson = obj.ToJsonString();
+                }
+            }
+            catch (JsonException) { }
+
+            var fallbackResult = await providerClient.CompleteResponsesAsync(
+                fallbackJson,
+                isStream,
+                cancellationToken,
+                isStream ? OnChunkAsync : null);
+
             if (fallbackResult.Succeeded)
             {
                 result = fallbackResult;
@@ -310,15 +366,13 @@ public static class GatewayEndpoints
 
         await db.SaveChangesAsync(cancellationToken);
 
-        if (isStream && result.StreamChunks is { Count: > 0 })
+        if (isStream)
         {
-            httpContext.Response.StatusCode = StatusCodes.Status200OK;
-            httpContext.Response.ContentType = "text/event-stream";
-            httpContext.Response.Headers.CacheControl = "no-cache";
-
-            foreach (var chunk in result.StreamChunks)
+            if (!headersWritten)
             {
-                await httpContext.Response.WriteAsync($"data: {chunk}\n\n", cancellationToken);
+                httpContext.Response.StatusCode = StatusCodes.Status200OK;
+                httpContext.Response.ContentType = "text/event-stream";
+                httpContext.Response.Headers.CacheControl = "no-cache";
             }
 
             await httpContext.Response.WriteAsync("data: [DONE]\n\n", cancellationToken);

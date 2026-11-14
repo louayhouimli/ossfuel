@@ -8,11 +8,12 @@ public sealed class MockAIProviderClient : IAIProviderClient
 
     public string ProviderName => AIUsage.OpenRouterProvider;
 
-    public Task<ChatCompletionProviderResult> CompleteChatAsync(
+    public async Task<ChatCompletionProviderResult> CompleteChatAsync(
         ChatCompletionRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<string, Task>? onChunk = null)
     {
-        var promptText = string.Join(" ", request.Messages.Select(message => message.Content));
+        var promptText = string.Join(" ", request.Messages.Select(message => message.ContentText));
         var promptTokens = Math.Max(10, promptText.Length / 4);
         var completionTokens = 25;
 
@@ -61,14 +62,20 @@ public sealed class MockAIProviderClient : IAIProviderClient
                 }
             });
 
-            return Task.FromResult(new ChatCompletionProviderResult(
+            if (onChunk is not null)
+            {
+                await onChunk(chunk1);
+                await onChunk(chunk2);
+            }
+
+            return new ChatCompletionProviderResult(
                 Succeeded: true,
                 StatusCode: StatusCodes.Status200OK,
                 ResponseJson: chunk2,
                 PromptTokens: promptTokens,
                 CompletionTokens: completionTokens,
                 ProviderCostUsd: null,
-                StreamChunks: [chunk1, chunk2]));
+                StreamChunks: [chunk1, chunk2]);
         }
 
         var responseJson = JsonSerializer.Serialize(new
@@ -98,28 +105,35 @@ public sealed class MockAIProviderClient : IAIProviderClient
             }
         });
 
-        return Task.FromResult(new ChatCompletionProviderResult(
+        return new ChatCompletionProviderResult(
             Succeeded: true,
             StatusCode: StatusCodes.Status200OK,
             ResponseJson: responseJson,
             PromptTokens: promptTokens,
             CompletionTokens: completionTokens,
-            ProviderCostUsd: null));
+            ProviderCostUsd: null);
     }
 
-    public Task<ChatCompletionProviderResult> CompleteResponsesAsync(
+    public async Task<ChatCompletionProviderResult> CompleteResponsesAsync(
         string requestJson,
         bool isStream,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<string, Task>? onChunk = null)
     {
-        return Task.FromResult(new ChatCompletionProviderResult(
+        const string chunk = """{"type":"response.reasoning_text.delta","delta":"mock"}""";
+        if (isStream && onChunk is not null)
+        {
+            await onChunk(chunk);
+        }
+
+        return new ChatCompletionProviderResult(
             Succeeded: true,
             StatusCode: StatusCodes.Status200OK,
             ResponseJson: """{"id":"resp_mock","object":"response","status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"OSSFuel mock response."}]}],"usage":{"input_tokens":10,"output_tokens":20}}""",
             PromptTokens: 10,
             CompletionTokens: 20,
             ProviderCostUsd: null,
-            StreamChunks: isStream ? new[] { """{"type":"response.reasoning_text.delta","delta":"mock"}""" } : null));
+            StreamChunks: isStream ? new[] { chunk } : null);
     }
 
     public Task<string> GetModelsJsonAsync(CancellationToken cancellationToken)

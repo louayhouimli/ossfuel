@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 
@@ -19,7 +20,8 @@ public sealed class OpenRouterClient(
 
     public async Task<ChatCompletionProviderResult> CompleteChatAsync(
         ChatCompletionRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<string, Task>? onChunk = null)
     {
         var config = options.Value;
         var endpoint = $"{config.BaseUrl.TrimEnd('/')}/chat/completions";
@@ -34,91 +36,123 @@ public sealed class OpenRouterClient(
         httpRequest.Headers.TryAddWithoutValidation("HTTP-Referer", "https://ossfuel-web.vercel.app");
         httpRequest.Headers.TryAddWithoutValidation("X-Title", "OSSFuel");
 
-        var payload = new
+        var requestNode = JsonSerializer.SerializeToNode(request, SerializerOptions)?.AsObject() ?? new JsonObject();
+        if (request.Stream && !requestNode.ContainsKey("stream_options"))
         {
-            model = request.Model,
-            messages = request.Messages,
-            stream = request.Stream,
-            temperature = request.Temperature,
-            max_tokens = request.MaxTokens,
-            stream_options = request.Stream ? new { include_usage = true } : null,
-        };
+            requestNode["stream_options"] = new JsonObject { ["include_usage"] = true };
+        }
+        var requestBodyJson = requestNode.ToJsonString(SerializerOptions);
 
         httpRequest.Content = new StringContent(
-            JsonSerializer.Serialize(payload, SerializerOptions),
+            requestBodyJson,
             Encoding.UTF8,
             "application/json");
 
-        using var response = await httpClient.SendAsync(
-            httpRequest,
-            request.Stream ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead,
-            cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        HttpResponseMessage response;
+        try
         {
-            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
+            response = await httpClient.SendAsync(
+                httpRequest,
+                request.Stream ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead,
+                cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+        {
             return new ChatCompletionProviderResult(
                 Succeeded: false,
-                StatusCode: (int)response.StatusCode,
-                ResponseJson: errorBody,
+                StatusCode: StatusCodes.Status504GatewayTimeout,
+                ResponseJson: JsonSerializer.Serialize(new { error = ex.Message }),
                 PromptTokens: 0,
                 CompletionTokens: 0,
                 ProviderCostUsd: null);
         }
 
-        if (request.Stream)
+        try
         {
-            var chunks = new List<string>();
-            var promptTokens = 0;
-            var completionTokens = 0;
-            decimal? costUsd = null;
-
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            using var reader = new StreamReader(stream);
-
-            while (await reader.ReadLineAsync(cancellationToken) is { } line)
+            using (response)
             {
-                if (!line.StartsWith("data:", StringComparison.Ordinal))
+                if (!response.IsSuccessStatusCode)
                 {
-                    continue;
+                    var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                    return new ChatCompletionProviderResult(
+                        Succeeded: false,
+                        StatusCode: (int)response.StatusCode,
+                        ResponseJson: errorBody,
+                        PromptTokens: 0,
+                        CompletionTokens: 0,
+                        ProviderCostUsd: null);
                 }
 
-                var data = line["data:".Length..].Trim();
-
-                if (string.IsNullOrEmpty(data) || string.Equals(data, "[DONE]", StringComparison.Ordinal))
+                if (request.Stream)
                 {
-                    continue;
+                    var chunks = new List<string>();
+                    var promptTokens = 0;
+                    var completionTokens = 0;
+                    decimal? costUsd = null;
+
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    using var reader = new StreamReader(stream);
+
+                    while (await reader.ReadLineAsync(cancellationToken) is { } line)
+                    {
+                        if (!line.StartsWith("data:", StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        var data = line["data:".Length..].Trim();
+
+                        if (string.IsNullOrEmpty(data) || string.Equals(data, "[DONE]", StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        chunks.Add(data);
+                        TryExtractUsage(data, ref promptTokens, ref completionTokens, ref costUsd);
+
+                        if (onChunk is not null)
+                        {
+                            await onChunk(data);
+                        }
+                    }
+
+                    return new ChatCompletionProviderResult(
+                        Succeeded: true,
+                        StatusCode: (int)response.StatusCode,
+                        ResponseJson: chunks.LastOrDefault() ?? "{}",
+                        PromptTokens: promptTokens,
+                        CompletionTokens: completionTokens,
+                        ProviderCostUsd: costUsd,
+                        StreamChunks: chunks);
                 }
 
-                chunks.Add(data);
-                TryExtractUsage(data, ref promptTokens, ref completionTokens, ref costUsd);
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                var parsedPrompt = 0;
+                var parsedCompletion = 0;
+                decimal? parsedCost = null;
+
+                TryExtractUsage(body, ref parsedPrompt, ref parsedCompletion, ref parsedCost);
+
+                return new ChatCompletionProviderResult(
+                    Succeeded: true,
+                    StatusCode: (int)response.StatusCode,
+                    ResponseJson: body,
+                    PromptTokens: parsedPrompt,
+                    CompletionTokens: parsedCompletion,
+                    ProviderCostUsd: parsedCost);
             }
-
-            return new ChatCompletionProviderResult(
-                Succeeded: true,
-                StatusCode: (int)response.StatusCode,
-                ResponseJson: chunks.LastOrDefault() ?? "{}",
-                PromptTokens: promptTokens,
-                CompletionTokens: completionTokens,
-                ProviderCostUsd: costUsd,
-                StreamChunks: chunks);
         }
-
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        var parsedPrompt = 0;
-        var parsedCompletion = 0;
-        decimal? parsedCost = null;
-
-        TryExtractUsage(body, ref parsedPrompt, ref parsedCompletion, ref parsedCost);
-
-        return new ChatCompletionProviderResult(
-            Succeeded: true,
-            StatusCode: (int)response.StatusCode,
-            ResponseJson: body,
-            PromptTokens: parsedPrompt,
-            CompletionTokens: parsedCompletion,
-            ProviderCostUsd: parsedCost);
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+        {
+            return new ChatCompletionProviderResult(
+                Succeeded: false,
+                StatusCode: StatusCodes.Status504GatewayTimeout,
+                ResponseJson: JsonSerializer.Serialize(new { error = ex.Message }),
+                PromptTokens: 0,
+                CompletionTokens: 0,
+                ProviderCostUsd: null);
+        }
     }
 
     private static void TryExtractUsage(
@@ -161,7 +195,8 @@ public sealed class OpenRouterClient(
     public async Task<ChatCompletionProviderResult> CompleteResponsesAsync(
         string requestJson,
         bool isStream,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<string, Task>? onChunk = null)
     {
         var config = options.Value;
         var endpoint = $"{config.BaseUrl.TrimEnd('/')}/responses";
@@ -181,75 +216,110 @@ public sealed class OpenRouterClient(
             Encoding.UTF8,
             "application/json");
 
-        using var response = await httpClient.SendAsync(
-            httpRequest,
-            isStream ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead,
-            cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        HttpResponseMessage response;
+        try
         {
-            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
+            response = await httpClient.SendAsync(
+                httpRequest,
+                isStream ? HttpCompletionOption.ResponseHeadersRead : HttpCompletionOption.ResponseContentRead,
+                cancellationToken);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+        {
             return new ChatCompletionProviderResult(
                 Succeeded: false,
-                StatusCode: (int)response.StatusCode,
-                ResponseJson: errorBody,
+                StatusCode: StatusCodes.Status504GatewayTimeout,
+                ResponseJson: JsonSerializer.Serialize(new { error = ex.Message }),
                 PromptTokens: 0,
                 CompletionTokens: 0,
                 ProviderCostUsd: null);
         }
 
-        if (isStream)
+        try
         {
-            var chunks = new List<string>();
-            var promptTokens = 0;
-            var completionTokens = 0;
-            decimal? costUsd = null;
-
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            using var reader = new StreamReader(stream);
-
-            while (await reader.ReadLineAsync(cancellationToken) is { } line)
+            using (response)
             {
-                if (!line.StartsWith("data:", StringComparison.Ordinal))
+                if (!response.IsSuccessStatusCode)
                 {
-                    continue;
+                    var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                    return new ChatCompletionProviderResult(
+                        Succeeded: false,
+                        StatusCode: (int)response.StatusCode,
+                        ResponseJson: errorBody,
+                        PromptTokens: 0,
+                        CompletionTokens: 0,
+                        ProviderCostUsd: null);
                 }
 
-                var data = line["data:".Length..].Trim();
-
-                if (string.IsNullOrEmpty(data) || string.Equals(data, "[DONE]", StringComparison.Ordinal))
+                if (isStream)
                 {
-                    continue;
+                    var chunks = new List<string>();
+                    var promptTokens = 0;
+                    var completionTokens = 0;
+                    decimal? costUsd = null;
+
+                    await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    using var reader = new StreamReader(stream);
+
+                    while (await reader.ReadLineAsync(cancellationToken) is { } line)
+                    {
+                        if (!line.StartsWith("data:", StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        var data = line["data:".Length..].Trim();
+
+                        if (string.IsNullOrEmpty(data) || string.Equals(data, "[DONE]", StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        chunks.Add(data);
+                        TryExtractUsage(data, ref promptTokens, ref completionTokens, ref costUsd);
+
+                        if (onChunk is not null)
+                        {
+                            await onChunk(data);
+                        }
+                    }
+
+                    return new ChatCompletionProviderResult(
+                        Succeeded: true,
+                        StatusCode: (int)response.StatusCode,
+                        ResponseJson: chunks.LastOrDefault() ?? "{}",
+                        PromptTokens: promptTokens,
+                        CompletionTokens: completionTokens,
+                        ProviderCostUsd: costUsd,
+                        StreamChunks: chunks);
                 }
 
-                chunks.Add(data);
-                TryExtractUsage(data, ref promptTokens, ref completionTokens, ref costUsd);
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                var pTokens = 0;
+                var cTokens = 0;
+                decimal? cost = null;
+                TryExtractUsage(responseBody, ref pTokens, ref cTokens, ref cost);
+
+                return new ChatCompletionProviderResult(
+                    Succeeded: true,
+                    StatusCode: (int)response.StatusCode,
+                    ResponseJson: responseBody,
+                    PromptTokens: pTokens,
+                    CompletionTokens: cTokens,
+                    ProviderCostUsd: cost);
             }
-
-            return new ChatCompletionProviderResult(
-                Succeeded: true,
-                StatusCode: (int)response.StatusCode,
-                ResponseJson: chunks.LastOrDefault() ?? "{}",
-                PromptTokens: promptTokens,
-                CompletionTokens: completionTokens,
-                ProviderCostUsd: costUsd,
-                StreamChunks: chunks);
         }
-
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-        var pTokens = 0;
-        var cTokens = 0;
-        decimal? cost = null;
-        TryExtractUsage(responseBody, ref pTokens, ref cTokens, ref cost);
-
-        return new ChatCompletionProviderResult(
-            Succeeded: true,
-            StatusCode: (int)response.StatusCode,
-            ResponseJson: responseBody,
-            PromptTokens: pTokens,
-            CompletionTokens: cTokens,
-            ProviderCostUsd: cost);
+        catch (Exception ex) when (ex is HttpRequestException or TimeoutException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+        {
+            return new ChatCompletionProviderResult(
+                Succeeded: false,
+                StatusCode: StatusCodes.Status504GatewayTimeout,
+                ResponseJson: JsonSerializer.Serialize(new { error = ex.Message }),
+                PromptTokens: 0,
+                CompletionTokens: 0,
+                ProviderCostUsd: null);
+        }
     }
 
     private static (string Json, DateTimeOffset ExpiresAt)? _cachedModels;
