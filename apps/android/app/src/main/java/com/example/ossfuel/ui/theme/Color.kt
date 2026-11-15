@@ -16,6 +16,7 @@ internal val PaperAccent = Color(0xFFEBEBEA)
 internal val PaperBorder = Color(0xFFDBDAD9)
 internal val PaperMutedForeground = Color(0xFF69696A)
 internal val PaperDestructive = Color(0xFFC23B44)
+internal val PaperEmerald = Color(0xFF047857)
 
 internal val InkCard = Color(0xFF0F0F10)
 internal val InkSecondary = Color(0xFF141415)
@@ -24,6 +25,7 @@ internal val InkAccent = Color(0xFF1E1E21)
 internal val InkBorder = Color(0xFF35353A)
 internal val InkMutedForeground = Color(0xFF9E9E9F)
 internal val InkDestructive = Color(0xFFF17074)
+internal val InkEmerald = Color(0xFF34D399)
 
 internal val LightColors = androidx.compose.material3.lightColorScheme(
     primary = Ink,
@@ -37,7 +39,7 @@ internal val LightColors = androidx.compose.material3.lightColorScheme(
     secondaryContainer = PaperMuted,
     onSecondaryContainer = Ink,
 
-    tertiary = Ink,
+    tertiary = PaperEmerald,
     onTertiary = Paper,
 
     background = Paper,
@@ -79,7 +81,7 @@ internal val DarkColors = androidx.compose.material3.darkColorScheme(
     secondaryContainer = InkMuted,
     onSecondaryContainer = Paper,
 
-    tertiary = Paper,
+    tertiary = InkEmerald,
     onTertiary = Ink,
 
     background = Ink,

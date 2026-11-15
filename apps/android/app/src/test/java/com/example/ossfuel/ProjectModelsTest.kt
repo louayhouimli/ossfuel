@@ -1,7 +1,9 @@
 package com.example.ossfuel
 
+import com.example.ossfuel.data.AiUsage
 import com.example.ossfuel.data.ApiClient
 import com.example.ossfuel.data.AvailableRepository
+import com.example.ossfuel.data.BalanceTransactionList
 import com.example.ossfuel.data.Project
 import com.example.ossfuel.data.ProjectList
 import kotlinx.serialization.builtins.ListSerializer
@@ -138,5 +140,69 @@ class ProjectModelsTest {
         assertEquals(1, repositories.size)
         assertEquals(42L, repositories.first().id)
         assertEquals(true, repositories.first().alreadyImported)
+    }
+
+    @Test
+    fun balanceTransactionsDecodeTheSponsorAndPaging() {
+        val history = json.decodeFromString(
+            BalanceTransactionList.serializer(),
+            """
+            {
+              "items": [
+                {
+                  "id": "transaction-1",
+                  "amountMinor": 2500,
+                  "type": "funding_credit",
+                  "status": "succeeded",
+                  "description": "Sponsor credit",
+                  "sponsor": {
+                    "id": "sponsor-1",
+                    "login": "octocat",
+                    "name": "The Octocat",
+                    "avatarUrl": "https://avatars.example/octocat.png"
+                  },
+                  "createdAt": "2026-02-01T12:00:00+00:00"
+                }
+              ],
+              "page": 1,
+              "pageSize": 10,
+              "totalCount": 11
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals(1, history.items.size)
+        assertEquals(2500, history.items.first().amountMinor)
+        assertEquals("octocat", history.items.first().sponsor?.login)
+        assertEquals(2, history.totalPages)
+    }
+
+    @Test
+    fun aiUsageDecodesTheGatewayLedger() {
+        val usages = json.decodeFromString(
+            ListSerializer(AiUsage.serializer()),
+            """
+            [
+              {
+                "id": "usage-1",
+                "projectId": "project-1",
+                "apiKeyId": "key-1",
+                "model": "gpt-4o-mini",
+                "provider": "openai",
+                "promptTokens": 1234,
+                "completionTokens": 567,
+                "totalTokens": 1801,
+                "costMinor": 42,
+                "status": "succeeded",
+                "createdAt": "2026-02-01T12:00:00+00:00"
+              }
+            ]
+            """.trimIndent(),
+        )
+
+        assertEquals(1, usages.size)
+        assertEquals("gpt-4o-mini", usages.first().model)
+        assertEquals(1801, usages.first().totalTokens)
+        assertEquals(42L, usages.first().costMinor)
     }
 }

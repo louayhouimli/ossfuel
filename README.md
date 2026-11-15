@@ -174,9 +174,10 @@ The debug build points at `http://localhost:5050`. Override it with
 `-Possfuel.apiBaseUrl=https://...` for a device that reaches the API another way.
 
 Once signed in, the app lists registered projects, opens a project's repository record, and
-lets its maintainer refresh or delete the project. The import screen searches the signed-in
-user's public GitHub repositories and registers the one you pick. Pull down on the project
-list to reload it.
+lets its maintainer refresh or delete the project. The detail screen also shows the public AI
+Balance with its funding history and the AI Usage Audit Log, matching the web client. The
+import screen searches the signed-in user's public GitHub repositories and registers the one
+you pick. Pull down on the project list to reload it.
 
 Run the Android unit tests with:
 

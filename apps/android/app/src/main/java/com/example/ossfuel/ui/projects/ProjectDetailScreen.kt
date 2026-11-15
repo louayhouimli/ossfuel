@@ -65,11 +65,19 @@ import com.example.ossfuel.ui.format.formatRelativeTime
 fun ProjectDetailScreen(
     state: ProjectDetailUiState,
     userId: String,
+    balanceState: BalanceUiState,
+    historyState: FundingHistoryUiState,
+    aiUsageState: AiUsageUiState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onRefresh: () -> Unit,
     onDelete: () -> Unit,
     onDeleted: () -> Unit,
+    onRetryBalance: () -> Unit,
+    onRetryHistory: () -> Unit,
+    onPreviousHistoryPage: () -> Unit,
+    onNextHistoryPage: () -> Unit,
+    onRetryAiUsage: () -> Unit,
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -135,8 +143,16 @@ fun ProjectDetailScreen(
                         isRefreshing = state.isRefreshing,
                         isDeleting = state.isDeleting,
                         actionError = state.actionError,
+                        balanceState = balanceState,
+                        historyState = historyState,
+                        aiUsageState = aiUsageState,
                         onRefresh = onRefresh,
                         onDelete = onDelete,
+                        onRetryBalance = onRetryBalance,
+                        onRetryHistory = onRetryHistory,
+                        onPreviousHistoryPage = onPreviousHistoryPage,
+                        onNextHistoryPage = onNextHistoryPage,
+                        onRetryAiUsage = onRetryAiUsage,
                     )
                 }
             }
@@ -170,8 +186,16 @@ private fun ProjectRecord(
     isRefreshing: Boolean,
     isDeleting: Boolean,
     actionError: String?,
+    balanceState: BalanceUiState,
+    historyState: FundingHistoryUiState,
+    aiUsageState: AiUsageUiState,
     onRefresh: () -> Unit,
     onDelete: () -> Unit,
+    onRetryBalance: () -> Unit,
+    onRetryHistory: () -> Unit,
+    onPreviousHistoryPage: () -> Unit,
+    onNextHistoryPage: () -> Unit,
+    onRetryAiUsage: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
 
@@ -187,6 +211,20 @@ private fun ProjectRecord(
             onClick = { uriHandler.openUri(project.htmlUrl) },
             modifier = Modifier.padding(top = 20.dp),
             compact = true,
+        )
+
+        BalanceSection(
+            balanceState = balanceState,
+            historyState = historyState,
+            onRetryBalance = onRetryBalance,
+            onRetryHistory = onRetryHistory,
+            onPreviousPage = onPreviousHistoryPage,
+            onNextPage = onNextHistoryPage,
+        )
+
+        AiUsageAuditSection(
+            state = aiUsageState,
+            onRetry = onRetryAiUsage,
         )
 
         Eyebrow(

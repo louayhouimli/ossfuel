@@ -61,6 +61,25 @@
     <string name="project_delete_title">Delete this project?</string>
     <string name="project_delete_description">This removes %1$s from OSSFuel. The GitHub repository is not touched, and you can register it again later.</string>
 
+    <!-- AI balance and usage audit -->
+    <string name="balance_eyebrow">AI Balance</string>
+    <string name="balance_loading">Loading the balance</string>
+    <string name="balance_error">The balance could not be loaded. Try again shortly.</string>
+    <string name="balance_caption">%1$s · public project balance</string>
+    <string name="balance_history_heading">Funding history</string>
+    <string name="balance_history_loading">Loading funding history</string>
+    <string name="balance_history_error">The funding history could not be loaded. Try again shortly.</string>
+    <string name="balance_history_empty">No funding has arrived yet. The first sponsor payment opens the history.</string>
+    <string name="balance_transaction_funding_credit">Funding credit</string>
+    <string name="balance_transaction_ai_usage_debit">AI usage debit</string>
+    <string name="audit_eyebrow">Transparency Ledger</string>
+    <string name="audit_title">AI Usage Audit Log</string>
+    <string name="audit_description">Every token spent through the gateway is audited in real time with prompt and completion counts and minor-unit USD cost.</string>
+    <string name="audit_loading">Loading AI usage…</string>
+    <string name="audit_error">The AI usage log could not be loaded. Try again shortly.</string>
+    <string name="audit_empty">No AI requests logged yet. Requests made using project API keys will appear here.</string>
+    <string name="audit_tokens">%1$s prompt · %2$s completion</string>
+
     <!-- Import -->
     <string name="import_eyebrow">Register a project</string>
     <string name="import_title">Import a repository</string>

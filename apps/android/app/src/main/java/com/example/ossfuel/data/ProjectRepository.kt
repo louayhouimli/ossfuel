@@ -15,6 +15,16 @@ interface ProjectRepository {
     suspend fun refresh(id: String): Project
 
     suspend fun delete(id: String)
+
+    suspend fun balance(projectId: String): Balance
+
+    suspend fun balanceTransactions(
+        projectId: String,
+        page: Int,
+        pageSize: Int,
+    ): BalanceTransactionList
+
+    suspend fun aiUsage(projectId: String): List<AiUsage>
 }
 
 class NetworkProjectRepository(private val api: ApiClient) : ProjectRepository {
@@ -48,6 +58,25 @@ class NetworkProjectRepository(private val api: ApiClient) : ProjectRepository {
     override suspend fun delete(id: String) {
         api.delete("$PROJECTS_PATH/$id")
     }
+
+    override suspend fun balance(projectId: String): Balance =
+        api.get("$PROJECTS_PATH/$projectId/balance", Balance.serializer())
+
+    override suspend fun balanceTransactions(
+        projectId: String,
+        page: Int,
+        pageSize: Int,
+    ): BalanceTransactionList =
+        api.get(
+            "$PROJECTS_PATH/$projectId/balance/transactions?page=$page&pageSize=$pageSize",
+            BalanceTransactionList.serializer(),
+        )
+
+    override suspend fun aiUsage(projectId: String): List<AiUsage> =
+        api.get(
+            "$PROJECTS_PATH/$projectId/ai-usage",
+            ListSerializer(AiUsage.serializer()),
+        )
 
     private companion object {
         const val PROJECTS_PATH = "/api/v1/projects"

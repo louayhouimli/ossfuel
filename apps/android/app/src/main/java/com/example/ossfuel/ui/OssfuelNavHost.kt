@@ -110,15 +110,26 @@ fun OssfuelNavHost(
                     factory = ProjectDetailViewModel.Factory(repository, route.projectId),
                 )
                 val state by viewModel.state.collectAsStateWithLifecycle()
+                val balanceState by viewModel.balance.collectAsStateWithLifecycle()
+                val historyState by viewModel.history.collectAsStateWithLifecycle()
+                val aiUsageState by viewModel.aiUsage.collectAsStateWithLifecycle()
 
                 ProjectDetailScreen(
                     state = state,
                     userId = user.id,
+                    balanceState = balanceState,
+                    historyState = historyState,
+                    aiUsageState = aiUsageState,
                     onBack = { navController.popBackStack() },
                     onRetry = viewModel::retry,
                     onRefresh = viewModel::refresh,
                     onDelete = viewModel::delete,
                     onDeleted = { navController.popBackStack() },
+                    onRetryBalance = viewModel::retryBalance,
+                    onRetryHistory = viewModel::retryHistory,
+                    onPreviousHistoryPage = viewModel::previousHistoryPage,
+                    onNextHistoryPage = viewModel::nextHistoryPage,
+                    onRetryAiUsage = viewModel::retryAiUsage,
                 )
             }
 

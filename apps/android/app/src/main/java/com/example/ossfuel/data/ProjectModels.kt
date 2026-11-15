@@ -61,3 +61,55 @@ data class AvailableRepository(
 data class CreateProjectRequest(
     val fullName: String,
 )
+
+@Serializable
+data class Balance(
+    val projectId: String,
+    val amountMinor: Long,
+    val currency: String,
+)
+
+@Serializable
+data class BalanceTransactionSponsor(
+    val id: String,
+    val login: String,
+    val name: String? = null,
+    val avatarUrl: String? = null,
+)
+
+@Serializable
+data class BalanceTransaction(
+    val id: String,
+    val amountMinor: Long,
+    val type: String,
+    val status: String,
+    val description: String? = null,
+    val sponsor: BalanceTransactionSponsor? = null,
+    val createdAt: String,
+)
+
+@Serializable
+data class BalanceTransactionList(
+    val items: List<BalanceTransaction> = emptyList(),
+    val page: Int = 1,
+    val pageSize: Int = 10,
+    val totalCount: Int = 0,
+) {
+    val totalPages: Int
+        get() = if (pageSize <= 0) 1 else maxOf(1, (totalCount + pageSize - 1) / pageSize)
+}
+
+@Serializable
+data class AiUsage(
+    val id: String,
+    val projectId: String,
+    val apiKeyId: String,
+    val model: String,
+    val provider: String,
+    val promptTokens: Int = 0,
+    val completionTokens: Int = 0,
+    val totalTokens: Int = 0,
+    val costMinor: Long,
+    val status: String,
+    val createdAt: String,
+)

@@ -2,8 +2,12 @@ package com.example.ossfuel
 
 import com.example.ossfuel.ui.format.formatCount
 import com.example.ossfuel.ui.format.formatDate
+import com.example.ossfuel.ui.format.formatDateTime
+import com.example.ossfuel.ui.format.formatMoney
 import com.example.ossfuel.ui.format.formatRelativeTime
+import com.example.ossfuel.ui.format.formatShortDateTime
 import java.time.Instant
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -101,6 +105,38 @@ class FormattersTest {
         assertEquals(
             "3h ago",
             formatRelativeTime("2026-02-01T08:30:00.1234567+00:00", now),
+        )
+    }
+
+    @Test
+    fun formatMoneyReadsMinorUnitsAsCurrency() {
+        val previous = Locale.getDefault()
+        Locale.setDefault(Locale.US)
+
+        try {
+            assertEquals("$12.50", formatMoney(1250))
+            assertEquals("$0.00", formatMoney(0))
+            assertEquals("-$3.25", formatMoney(-325))
+        } finally {
+            Locale.setDefault(previous)
+        }
+    }
+
+    @Test
+    fun dateTimeFormattersReturnUnparseableTimestampsUnchanged() {
+        assertEquals("not-a-date", formatDateTime("not-a-date"))
+        assertEquals("not-a-date", formatShortDateTime("not-a-date"))
+    }
+
+    @Test
+    fun dateTimeFormattersTreatOffsetsAsTheSameInstant() {
+        assertEquals(
+            formatDateTime("2026-02-01T12:00:00Z"),
+            formatDateTime("2026-02-01T14:00:00+02:00"),
+        )
+        assertEquals(
+            formatShortDateTime("2026-02-01T12:00:00Z"),
+            formatShortDateTime("2026-02-01T14:00:00+02:00"),
         )
     }
 }
