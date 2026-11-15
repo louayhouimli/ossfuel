@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">ossfuel</string>
+    <string name="sign_in_title">OSSFuel</string>
+    <string name="sign_in_subtitle">Sign in with GitHub to keep your AI spend attached to the work.</string>
+    <string name="sign_in_button">Continue with GitHub</string>
+    <string name="sign_in_hint">GitHub is the only way to sign in.</string>
+    <string name="sign_in_checking">Checking your session…</string>
+    <string name="sign_in_signed_in_as">Signed in as</string>
+    <string name="sign_in_github">Signed in with GitHub</string>
+    <string name="sign_out_button">Sign out</string>
+</resources>

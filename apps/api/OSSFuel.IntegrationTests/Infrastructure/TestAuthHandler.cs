@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -24,7 +25,8 @@ public sealed class TestAuthHandler(
 
         var identity = new ClaimsIdentity(
             [new Claim(ClaimTypes.NameIdentifier, values.ToString())],
-            SchemeName);
+            // Simulate a browser session so cookie-specific middleware (CSRF) behaves as in production.
+            CookieAuthenticationDefaults.AuthenticationScheme);
 
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName);
 

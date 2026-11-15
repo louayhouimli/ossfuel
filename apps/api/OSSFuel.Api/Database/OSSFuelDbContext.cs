@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using OSSFuel.Api.Features.ApiKeys;
+using OSSFuel.Api.Features.Auth;
 using OSSFuel.Api.Features.Balances;
 using OSSFuel.Api.Features.Funding;
 using OSSFuel.Api.Features.Gateway;
@@ -25,6 +26,8 @@ public class OSSFuelDbContext(DbContextOptions<OSSFuelDbContext> options) : DbCo
     public DbSet<ProjectApiKey> ProjectApiKeys => Set<ProjectApiKey>();
 
     public DbSet<AIUsage> AIUsages => Set<AIUsage>();
+
+    public DbSet<MobileAuthCode> MobileAuthCodes => Set<MobileAuthCode>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

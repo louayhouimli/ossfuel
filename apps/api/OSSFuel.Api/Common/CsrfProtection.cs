@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 
 namespace OSSFuel.Api.Common;
@@ -42,7 +43,11 @@ public sealed class CsrfProtectionMiddleware(RequestDelegate next, IProblemDetai
         || HttpMethods.IsPatch(method);
 
     private static bool IsCookieAuthenticated(HttpContext context) =>
-        context.User.Identity?.IsAuthenticated == true;
+        context.User.Identity?.IsAuthenticated == true
+        && string.Equals(
+            context.User.Identity.AuthenticationType,
+            CookieAuthenticationDefaults.AuthenticationScheme,
+            StringComparison.Ordinal);
 
     private static bool IsExemptPath(PathString path) =>
         path.StartsWithSegments("/fundings/webhook")

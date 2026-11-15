@@ -30,6 +30,9 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseSetting("Database:MigrateOnStartup", "false");
         builder.UseSetting("Authentication:GitHub:ClientId", "test-client-id");
         builder.UseSetting("Authentication:GitHub:ClientSecret", "test-client-secret");
+        builder.UseSetting(
+            "Authentication:Mobile:Jwt:SigningKey",
+            "integration-test-mobile-jwt-signing-key-at-least-32-bytes");
 
         builder.ConfigureTestServices(services =>
         {

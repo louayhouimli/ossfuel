@@ -1,10 +1,14 @@
 using System.Security.Claims;
+using System.Text;
 using System.Text.Json;
 using AspNet.Security.OAuth.GitHub;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Users;
@@ -13,6 +17,8 @@ namespace OSSFuel.Api.Features.Auth;
 
 public static class AuthSetup
 {
+    public const string AppAuthenticationScheme = "App";
+
     public static IServiceCollection AddAuthFeature(this IServiceCollection services, IConfiguration configuration)
     {
         var gitHubClientId = configuration["Authentication:GitHub:ClientId"]
@@ -21,8 +27,26 @@ public static class AuthSetup
         var gitHubClientSecret = configuration["Authentication:GitHub:ClientSecret"]
             ?? throw new InvalidOperationException("Authentication:GitHub:ClientSecret is not configured");
 
+        var mobileOptions = MobileAuthOptions.FromConfiguration(configuration);
+
+        services.AddSingleton(mobileOptions);
+        services.AddSingleton<IMobileTokenIssuer, MobileTokenIssuer>();
+
         services
-            .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = AppAuthenticationScheme;
+                options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            })
+            .AddPolicyScheme(AppAuthenticationScheme, "Cookie or mobile bearer token", options =>
+            {
+                options.ForwardDefaultSelector = context =>
+                    context.Request.Headers.Authorization.ToString()
+                        .StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                        ? JwtBearerDefaults.AuthenticationScheme
+                        : CookieAuthenticationDefaults.AuthenticationScheme;
+            })
             .AddCookie(options =>
             {
                 options.Cookie.Name = "ossfuel.session";
@@ -44,6 +68,23 @@ public static class AuthSetup
                     return Task.CompletedTask;
                 };
             })
+            .AddJwtBearer(options =>
+            {
+                options.MapInboundClaims = true;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = mobileOptions.Jwt.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = mobileOptions.Jwt.Audience,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(mobileOptions.Jwt.SigningKey)),
+                    ClockSkew = TimeSpan.FromMinutes(1),
+                    NameClaimType = "name",
+                };
+            })
             .AddGitHub(options =>
             {
                 options.ClientId = gitHubClientId;
@@ -54,6 +95,8 @@ public static class AuthSetup
                 options.Scope.Add("public_repo");
 
                 options.Events.OnCreatingTicket = GitHubEvents.OnCreatingTicket;
+                options.Events.OnTicketReceived = context =>
+                    GitHubEvents.OnTicketReceived(context, mobileOptions);
             });
 
         services.AddAuthorization();
@@ -112,6 +155,58 @@ public static class GitHubEvents
         }
 
         identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
+    }
+
+    public static async Task OnTicketReceived(
+        TicketReceivedContext context,
+        MobileAuthOptions mobileOptions)
+    {
+        // RemoteAuthenticationHandler moves Properties.RedirectUri into ReturnUri (and clears it)
+        // before raising TicketReceived. Read ReturnUri, or mobile sign-ins fall through to the
+        // cookie path and redirect back with no exchange code.
+        var redirectUri = context.ReturnUri;
+
+        if (string.IsNullOrWhiteSpace(redirectUri) || !mobileOptions.IsAllowedRedirect(redirectUri))
+        {
+            return;
+        }
+
+        var userId = Guid.TryParse(
+            context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier),
+            out var id)
+            ? id
+            : Guid.Empty;
+
+        if (userId == Guid.Empty)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            context.HandleResponse();
+            await context.Response.WriteAsync("Unable to start a mobile session.");
+            return;
+        }
+
+        var db = context.HttpContext.RequestServices.GetRequiredService<OSSFuelDbContext>();
+        var cancellationToken = context.HttpContext.RequestAborted;
+        var now = DateTimeOffset.UtcNow;
+
+        var previousCodes = await db.MobileAuthCodes
+            .Where(code => code.UserId == userId)
+            .ToListAsync(cancellationToken);
+
+        if (previousCodes.Count > 0)
+        {
+            // Only the most recent sign-in attempt should be redeemable.
+            db.MobileAuthCodes.RemoveRange(previousCodes);
+        }
+
+        var (rawCode, code) = MobileAuthCodeFactory.Create(userId, now);
+        db.MobileAuthCodes.Add(code);
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        // Do not sign the browser in: the app exchanges this single-use code for its own token.
+        context.Response.Redirect(QueryHelpers.AddQueryString(redirectUri, "code", rawCode));
+        context.HandleResponse();
     }
 
     private static string? GetProperty(OAuthCreatingTicketContext context, string propertyName) =>

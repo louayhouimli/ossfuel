@@ -70,6 +70,38 @@ namespace OSSFuel.Api.Migrations
                     b.ToTable("ProjectApiKeys");
                 });
 
+            modelBuilder.Entity("OSSFuel.Api.Features.Auth.MobileAuthCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CodeHash")
+                        .IsUnique();
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MobileAuthCodes");
+                });
+
             modelBuilder.Entity("OSSFuel.Api.Features.Balances.AIBalance", b =>
                 {
                     b.Property<Guid>("Id")
@@ -461,6 +493,17 @@ namespace OSSFuel.Api.Migrations
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Auth.MobileAuthCode", b =>
+                {
+                    b.HasOne("OSSFuel.Api.Features.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("OSSFuel.Api.Features.Balances.AIBalance", b =>

@@ -42,7 +42,7 @@ The repository contains:
 - **Maintainer Dashboard & Audit Logs**:
   - Web UI for generating and revoking keys.
   - Real-time token usage logs showing prompt tokens, completion tokens, and dollar deductions.
-- **Test Suite**: 127 automated tests (21 unit tests and 106 integration tests) covering all authentication, funding, gateway, and ledger flows.
+- **Test Suite**: 148 automated tests (33 unit tests and 115 integration tests) covering all authentication, funding, gateway, and ledger flows.
 
 ## Architecture
 
@@ -85,6 +85,7 @@ Coding Agent (OpenCode / Aider / Cursor / Continue)
 ```text
 apps/web       React frontend application
 apps/api       ASP.NET Core API and .NET test suites
+apps/android   Android app (Jetpack Compose)
 packages/ui    Shared UI components
 docs/          Specifications, design docs, and implementation plans
 ```
@@ -151,6 +152,37 @@ curl https://api.ossfuel.louayhouimli.dev/v1/chat/completions \
    ```bash
    dotnet test apps/api/api.slnx
    ```
+
+### Android app
+
+The Android client signs in through a Chrome Custom Tab and exchanges a one-time code for a
+30-day bearer token, so the API needs `Authentication:Mobile:Jwt:SigningKey` configured outside
+Development (for example `Authentication__Mobile__Jwt__SigningKey`).
+
+```bash
+cd apps/android
+
+# Makes http://localhost:5050 reachable from the emulator (and USB devices) so the
+# GitHub OAuth callback registered against localhost keeps working.
+adb reverse tcp:5050 tcp:5050
+
+./gradlew :app:assembleDebug
+./gradlew :app:installDebug
+```
+
+The debug build points at `http://localhost:5050`. Override it with
+`-Possfuel.apiBaseUrl=https://...` for a device that reaches the API another way.
+
+Watch the sign-in flow at runtime (debug builds only):
+
+```bash
+adb logcat -s OSSFuel
+```
+
+You should see the Custom Tab launch, the incoming `ossfuel://auth/callback` deep link with
+`hasState=true hasCode=true`, `POST /api/v1/auth/mobile/exchange -> 200`, and
+`signed in as <login>`. If the deep link arrives with `hasCode=false`, check the API logs for
+the `MobileAuthCodes` insert on the `/api/v1/auth/callback` request.
 
 ## Goal
 
