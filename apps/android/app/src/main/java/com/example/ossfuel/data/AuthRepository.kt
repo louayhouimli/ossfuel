@@ -3,6 +3,7 @@ package com.example.ossfuel.data
 import com.example.ossfuel.AppLog
 import java.net.URLEncoder
 import java.util.UUID
+import kotlinx.serialization.encodeToString
 
 class AuthRepository(
     private val api: ApiClient,
@@ -17,7 +18,7 @@ class AuthRepository(
 
         return try {
             AppLog.debug("validating stored token")
-            api.me()
+            api.get(ME_PATH, AuthUser.serializer())
         } catch (exception: ApiException) {
             AppLog.warn("stored token was rejected (${exception.statusCode})")
             if (exception.statusCode == 401) {
@@ -51,7 +52,11 @@ class AuthRepository(
     }
 
     suspend fun exchangeCode(code: String): AuthUser {
-        val response = api.exchangeCode(code)
+        val body = api.json.encodeToString(
+            MobileExchangeRequest.serializer(),
+            MobileExchangeRequest(code),
+        )
+        val response = api.post(EXCHANGE_PATH, body, MobileAuthResponse.serializer())
         tokenStore.saveToken(response.accessToken)
         AppLog.debug("stored the mobile access token")
 
@@ -72,5 +77,7 @@ class AuthRepository(
         const val REDIRECT_URI = "ossfuel://auth/callback"
 
         private const val SIGN_IN_PATH = "/api/v1/auth/sign-in"
+        private const val EXCHANGE_PATH = "/api/v1/auth/mobile/exchange"
+        private const val ME_PATH = "/api/v1/auth/me"
     }
 }

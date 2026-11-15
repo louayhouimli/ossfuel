@@ -27,4 +27,5 @@ data class MobileExchangeRequest(
 data class ProblemDetails(
     val title: String? = null,
     val detail: String? = null,
+    val errors: Map<String, List<String>>? = null,
 )

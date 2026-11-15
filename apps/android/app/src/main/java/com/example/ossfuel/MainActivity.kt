@@ -15,8 +15,11 @@ import com.example.ossfuel.ui.OssfuelAppRoot
 import com.example.ossfuel.ui.theme.OssfuelTheme
 
 class MainActivity : ComponentActivity() {
+    private val container: AppContainer
+        get() = (application as OssfuelApplication).container
+
     private val viewModel: AuthViewModel by viewModels {
-        AuthViewModel.Factory((application as OssfuelApplication).container.authRepository)
+        AuthViewModel.Factory(container.authRepository, container.authEvents)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +37,7 @@ class MainActivity : ComponentActivity() {
 
                 OssfuelAppRoot(
                     state = state,
+                    projectRepository = container.projectRepository,
                     onSignIn = ::openSignIn,
                     onSignOut = viewModel::signOut,
                 )

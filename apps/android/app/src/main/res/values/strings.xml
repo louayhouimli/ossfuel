@@ -1,11 +1,83 @@
 <resources>
-    <string name="app_name">ossfuel</string>
-    <string name="sign_in_title">OSSFuel</string>
-    <string name="sign_in_subtitle">Sign in with GitHub to keep your AI spend attached to the work.</string>
+    <string name="app_name">OSSFuel</string>
+
+    <!-- Sign in -->
+    <string name="sign_in_title">Welcome back.</string>
+    <string name="sign_in_subtitle">Sign in with GitHub to continue to your OSSFuel workspace.</string>
     <string name="sign_in_button">Continue with GitHub</string>
     <string name="sign_in_hint">GitHub is the only way to sign in.</string>
     <string name="sign_in_checking">Checking your session…</string>
-    <string name="sign_in_signed_in_as">Signed in as</string>
-    <string name="sign_in_github">Signed in with GitHub</string>
     <string name="sign_out_button">Sign out</string>
+    <string name="auth_panel_headline">Keep the AI spend attached to the work.</string>
+    <string name="auth_panel_description">Sponsor funding, maintainer requests, and provider costs in one visible accounting layer.</string>
+    <string name="auth_panel_footer">Early development. Built for open-source maintainers.</string>
+
+    <!-- Shared actions -->
+    <string name="action_retry">Try again</string>
+    <string name="action_previous">Previous</string>
+    <string name="action_next">Next</string>
+    <string name="action_import">Import</string>
+    <string name="action_register_project">Register a project</string>
+    <string name="action_refresh">Refresh from GitHub</string>
+    <string name="action_refreshing">Refreshing</string>
+    <string name="action_delete">Delete project</string>
+    <string name="action_deleting">Deleting</string>
+    <string name="action_keep_it">Keep it</string>
+    <string name="action_confirm_delete">Yes, delete it</string>
+    <string name="action_view_on_github">View on GitHub</string>
+    <string name="action_register">Register project</string>
+    <string name="action_registering">Registering</string>
+
+    <!-- Projects list -->
+    <string name="projects_eyebrow">Projects</string>
+    <string name="projects_title">Open-source projects building with OSSFuel.</string>
+    <string name="projects_description">Every project here is registered by a maintainer and linked to its public GitHub repository. Sponsors will fund these projects\' AI balances.</string>
+    <string name="projects_loading">Loading projects.</string>
+    <string name="projects_no_description">No description provided.</string>
+    <string name="projects_empty_title">No projects are registered yet.</string>
+    <string name="projects_empty_description">A maintainer signs in with GitHub and imports their repository to create the first project.</string>
+    <string name="projects_page">Page %1$d of %2$d</string>
+
+    <!-- Project detail -->
+    <string name="project_back">All projects</string>
+    <string name="project_not_found_title">Project not found</string>
+    <string name="project_not_found_description">This project does not exist or has been removed.</string>
+    <string name="project_load_error">The project could not be loaded. Try again shortly.</string>
+    <string name="project_record_heading">Repository record</string>
+    <string name="project_record_full_name">Full name</string>
+    <string name="project_record_language">Language</string>
+    <string name="project_record_stars">Stars</string>
+    <string name="project_record_forks">Forks</string>
+    <string name="project_record_open_issues">Open issues</string>
+    <string name="project_record_default_branch">Default branch</string>
+    <string name="project_record_website">Website</string>
+    <string name="project_record_registered">Registered</string>
+    <string name="project_record_last_snapshot">Last snapshot</string>
+    <string name="project_record_topics">Topics</string>
+    <string name="value_not_specified">Not specified</string>
+    <string name="value_unknown">Unknown</string>
+    <string name="project_maintainer_heading">Maintainer</string>
+    <string name="project_maintainer_description">You registered this project. Refreshing re-reads the numbers from GitHub; deleting removes it from OSSFuel and leaves the repository itself untouched.</string>
+    <string name="project_delete_title">Delete this project?</string>
+    <string name="project_delete_description">This removes %1$s from OSSFuel. The GitHub repository is not touched, and you can register it again later.</string>
+
+    <!-- Import -->
+    <string name="import_eyebrow">Register a project</string>
+    <string name="import_title">Import a repository</string>
+    <string name="import_description">Choose one of your public GitHub repositories. OSSFuel retrieves its information from GitHub and registers it as a project. One repository becomes one project.</string>
+    <string name="import_loading">Loading your repositories from GitHub</string>
+    <string name="import_search_placeholder">Search by name or description</string>
+    <string name="import_empty_title">No repositories are available to import</string>
+    <string name="import_empty_description">OSSFuel imports public repositories you can push to. Create one on GitHub, then come back.</string>
+    <string name="import_no_matches">No repositories match your search.</string>
+    <string name="import_no_description">No description provided.</string>
+    <string name="import_already_registered">Already registered</string>
+    <string name="import_error">Your repositories could not be loaded. Try again shortly.</string>
+
+    <!-- Content descriptions -->
+    <string name="cd_back">Back</string>
+    <string name="cd_avatar">Profile picture</string>
+    <string name="cd_star">Stars</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_clear_search">Clear search</string>
 </resources>

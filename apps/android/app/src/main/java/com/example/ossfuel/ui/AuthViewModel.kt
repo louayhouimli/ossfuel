@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.ossfuel.AppLog
+import com.example.ossfuel.data.AuthEvents
 import com.example.ossfuel.data.AuthRepository
 import com.example.ossfuel.data.AuthUser
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,7 +21,10 @@ sealed interface AuthUiState {
     data class SignedIn(val user: AuthUser) : AuthUiState
 }
 
-class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
+class AuthViewModel(
+    private val repository: AuthRepository,
+    authEvents: AuthEvents,
+) : ViewModel() {
     private val _state = MutableStateFlow<AuthUiState>(AuthUiState.Loading)
     val state: StateFlow<AuthUiState> = _state.asStateFlow()
 
@@ -38,6 +42,14 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
                 _state.value = user
                     ?.let(AuthUiState::SignedIn)
                     ?: AuthUiState.SignedOut()
+            }
+        }
+
+        viewModelScope.launch {
+            authEvents.signedOut.collect { reason ->
+                AppLog.warn("API rejected the session: $reason")
+                sessionRequest++
+                _state.value = AuthUiState.SignedOut(reason)
             }
         }
     }
@@ -112,14 +124,17 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 
-    class Factory(private val repository: AuthRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val repository: AuthRepository,
+        private val authEvents: AuthEvents,
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(AuthViewModel::class.java)) {
                 "Unknown ViewModel class: ${modelClass.name}"
             }
 
-            return AuthViewModel(repository) as T
+            return AuthViewModel(repository, authEvents) as T
         }
     }
 }

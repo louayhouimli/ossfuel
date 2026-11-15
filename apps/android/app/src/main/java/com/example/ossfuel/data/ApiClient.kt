@@ -5,20 +5,26 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
+/**
+ * The single HTTP boundary. It attaches the bearer token, tags requests as
+ * coming from Android, and turns problem responses into [ApiException]s.
+ *
+ * Endpoint paths live in the repositories so this class stays a transport.
+ */
 class ApiClient(
     private val baseUrl: String,
     private val tokenProvider: () -> String?,
     private val onUnauthorized: () -> Unit,
 ) {
-    private val json = Json {
+    val json = Json {
         ignoreUnknownKeys = true
         explicitNulls = false
     }
@@ -43,22 +49,35 @@ class ApiClient(
         }
         .build()
 
-    suspend fun exchangeCode(code: String): MobileAuthResponse =
-        json.decodeFromString(execute(post(EXCHANGE_PATH, json.encodeToString(MobileExchangeRequest(code)))))
+    suspend fun <T> get(path: String, deserializer: DeserializationStrategy<T>): T =
+        decode(execute(getRequest(path)), deserializer)
 
-    suspend fun me(): AuthUser =
-        json.decodeFromString(execute(get(ME_PATH)))
+    suspend fun <T> post(
+        path: String,
+        body: String?,
+        deserializer: DeserializationStrategy<T>,
+    ): T = decode(execute(postRequest(path, body)), deserializer)
 
-    private fun get(path: String): Request =
+    suspend fun delete(path: String) {
+        execute(deleteRequest(path))
+    }
+
+    private fun getRequest(path: String): Request =
         Request.Builder()
             .url(url(path))
             .get()
             .build()
 
-    private fun post(path: String, body: String): Request =
+    private fun postRequest(path: String, body: String?): Request =
         Request.Builder()
             .url(url(path))
-            .post(body.toRequestBody(JSON_MEDIA_TYPE))
+            .post(body?.toRequestBody(JSON_MEDIA_TYPE) ?: EMPTY_BODY)
+            .build()
+
+    private fun deleteRequest(path: String): Request =
+        Request.Builder()
+            .url(url(path))
+            .delete()
             .build()
 
     private fun url(path: String): String = baseUrl.trimEnd('/') + path
@@ -68,7 +87,7 @@ class ApiClient(
             client.newCall(request).execute().use { response ->
                 if (response.code == 401) {
                     onUnauthorized()
-                    throw ApiException(401, "Your sign-in has expired. Please sign in again.")
+                    throw ApiException(401, "Your sign-in expired. Please sign in again.")
                 }
 
                 if (!response.isSuccessful) {
@@ -87,23 +106,38 @@ class ApiClient(
         }
     }
 
-    private fun readError(body: String?): String {
-        if (body.isNullOrBlank()) {
-            return "Sign-in failed. Please try again."
+    private fun <T> decode(body: String, deserializer: DeserializationStrategy<T>): T {
+        if (body.isBlank()) {
+            throw ApiException(0, "OSSFuel returned an empty response.")
         }
 
         return try {
-            val problem = json.decodeFromString<ProblemDetails>(body)
-            problem.detail ?: problem.title ?: "Sign-in failed. Please try again."
+            json.decodeFromString(deserializer, body)
+        } catch (exception: SerializationException) {
+            AppLog.warn("could not read the API response", exception)
+            throw ApiException(0, "OSSFuel returned an unexpected response.")
+        }
+    }
+
+    private fun readError(body: String?): String {
+        if (body.isNullOrBlank()) {
+            return "Something went wrong. Try again."
+        }
+
+        return try {
+            val problem = json.decodeFromString(ProblemDetails.serializer(), body)
+            problem.detail
+                ?: problem.errors?.values?.firstOrNull()?.firstOrNull()
+                ?: problem.title
+                ?: "Something went wrong. Try again."
         } catch (exception: Exception) {
-            "Sign-in failed. Please try again."
+            "Something went wrong. Try again."
         }
     }
 
     private companion object {
-        const val EXCHANGE_PATH = "/api/v1/auth/mobile/exchange"
-        const val ME_PATH = "/api/v1/auth/me"
         const val CLIENT_HEADER = "X-OSSFuel-Client"
         val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+        val EMPTY_BODY = ByteArray(0).toRequestBody(null)
     }
 }

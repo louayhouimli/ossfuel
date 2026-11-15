@@ -173,6 +173,17 @@ adb reverse tcp:5050 tcp:5050
 The debug build points at `http://localhost:5050`. Override it with
 `-Possfuel.apiBaseUrl=https://...` for a device that reaches the API another way.
 
+Once signed in, the app lists registered projects, opens a project's repository record, and
+lets its maintainer refresh or delete the project. The import screen searches the signed-in
+user's public GitHub repositories and registers the one you pick. Pull down on the project
+list to reload it.
+
+Run the Android unit tests with:
+
+```bash
+./gradlew :app:testDebugUnitTest
+```
+
 Watch the sign-in flow at runtime (debug builds only):
 
 ```bash
