@@ -64,12 +64,17 @@ public class ProjectRetrievalService : IProjectRetrievalService
                 .Select(c => new
                 {
                     Chunk = c,
+                    Project = c.Project,
                     Distance = (float)c.Embedding!.CosineDistance(queryVector)
                 })
                 .ToListAsync(ct);
 
             candidateChunks = matches
-                .Select(m => new ChunkMatch(m.Chunk, m.Distance))
+                .Select(m =>
+                {
+                    m.Chunk.Project = m.Project;
+                    return new ChunkMatch(m.Chunk, m.Distance);
+                })
                 .ToList();
         }
         else
