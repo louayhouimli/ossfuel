@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using OSSFuel.Api.Features.Discovery.Ingestion;
 
 namespace OSSFuel.Api.Features.Discovery.Gemini;
 
@@ -26,6 +27,8 @@ public static class GeminiSetup
                 client.BaseAddress = new Uri(options.BaseUrl.TrimEnd('/') + "/");
             }
         });
+
+        services.AddSingleton<IMarkdownChunker, MarkdownChunker>();
 
         return services;
     }
