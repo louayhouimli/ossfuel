@@ -21,16 +21,8 @@ const INITIAL_MESSAGES: WidgetMessage[] = [
 
 const QUICK_PROMPTS = [
   "Find AI developer tools with active maintenance",
-  "Open source projects with under 500 stars",
+  "Tell me about OSSFuel",
   "TypeScript developer libraries",
-]
-
-const VARIANT_OPTIONS: { id: ChatbotIconVariant; label: string }[] = [
-  { id: "buddy", label: "Buddy" },
-  { id: "walker", label: "Walker" },
-  { id: "wave", label: "Wave" },
-  { id: "accent", label: "Accent" },
-  { id: "stance", label: "Stance" },
 ]
 
 let messageCounter = 0
@@ -46,7 +38,7 @@ function formatCurrentTime(): string {
 
 export function AssistantWidget() {
   const [isOpen, setIsOpen] = React.useState(false)
-  const [variant, setVariant] = React.useState<ChatbotIconVariant>("buddy")
+  const variant: ChatbotIconVariant = "buddy"
   const [messages, setMessages] = React.useState<WidgetMessage[]>(INITIAL_MESSAGES)
   const [input, setInput] = React.useState("")
   const [isTyping, setIsTyping] = React.useState(false)
@@ -149,26 +141,6 @@ export function AssistantWidget() {
             </button>
           </div>
 
-          {/* Style Selector Toolbar */}
-          <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-3 py-1.5 text-[11px]">
-            <span className="text-muted-foreground font-medium">Legs style:</span>
-            <div className="flex items-center gap-1">
-              {VARIANT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => setVariant(opt.id)}
-                  className={`rounded-md px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
-                    variant === opt.id
-                      ? "bg-primary text-primary-foreground shadow-2xs"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3 text-sm">
             {messages.map((m) => (
@@ -215,7 +187,6 @@ export function AssistantWidget() {
                   <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.3s]" />
                   <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce [animation-delay:-0.15s]" />
                   <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-bounce" />
-                  <span className="ml-1 text-[11px] text-muted-foreground font-medium">Searching projects...</span>
                 </div>
               </div>
             )}
