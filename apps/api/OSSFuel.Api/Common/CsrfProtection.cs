@@ -47,7 +47,6 @@ public sealed class CsrfProtectionMiddleware(RequestDelegate next, IProblemDetai
     private static bool IsExemptPath(PathString path) =>
         path.StartsWithSegments("/fundings/webhook")
         || path.StartsWithSegments("/api/v1/fundings/webhook")
-        || path.StartsWithSegments("/fundings/stripe-webhook")
         || path.StartsWithSegments("/api/v1/fundings/stripe-webhook")
         || path.StartsWithSegments("/v1")
         || path.StartsWithSegments("/api/v1/chat")
