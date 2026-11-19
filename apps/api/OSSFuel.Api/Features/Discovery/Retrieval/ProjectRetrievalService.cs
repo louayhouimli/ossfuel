@@ -140,17 +140,14 @@ public class ProjectRetrievalService : IProjectRetrievalService
             var vitalityScore = CalculateVitalityScore(project);
 
             var nameBonus = 0.0f;
-            if (query.Query.Contains(project.Name, StringComparison.OrdinalIgnoreCase) ||
-                query.Query.Contains(project.FullName, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(project.Name) &&
+                (query.Query.Contains(project.Name, StringComparison.OrdinalIgnoreCase) ||
+                 query.Query.Contains(project.FullName, StringComparison.OrdinalIgnoreCase)))
             {
                 nameBonus = 0.35f;
             }
-            else if (project.Name.Contains(query.Query, StringComparison.OrdinalIgnoreCase))
-            {
-                nameBonus = 0.25f;
-            }
 
-            var combinedScore = (0.85f * semanticSimilarity) + (0.15f * vitalityScore) + nameBonus;
+            var combinedScore = (0.70f * semanticSimilarity) + (0.30f * vitalityScore) + nameBonus;
 
             results.Add(new ProjectSearchResult(
                 project.Id,

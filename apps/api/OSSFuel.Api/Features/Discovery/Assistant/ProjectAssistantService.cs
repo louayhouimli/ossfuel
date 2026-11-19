@@ -41,7 +41,7 @@ public class ProjectAssistantService(
             Query: lastUserMessage.Text,
             Language: request?.Language,
             MinStars: request?.MinStars,
-            Limit: 6);
+            Limit: 4);
 
         var retrievedProjects = await retrievalService.SearchProjectsAsync(searchQuery, ct);
 
