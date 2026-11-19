@@ -96,7 +96,8 @@ public static class FundingEndpoints
         }
 
         var now = DateTimeOffset.UtcNow;
-        var funding = Funding.Create(project.Id, user.Id, request.AmountMinor, now);
+        var provider = payments is StripePaymentProvider ? Funding.StripeProvider : Funding.MockProvider;
+        var funding = Funding.Create(project.Id, user.Id, request.AmountMinor, now, provider);
         db.Fundings.Add(funding);
         await db.SaveChangesAsync(cancellationToken);
 
