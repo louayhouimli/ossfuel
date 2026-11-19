@@ -8,9 +8,9 @@ public sealed class GeminiOptions
 
     public string BaseUrl { get; set; } = "https://generativelanguage.googleapis.com/v1beta";
 
-    public string EmbeddingModel { get; set; } = "text-embedding-004";
+    public string EmbeddingModel { get; set; } = "gemini-embedding-001";
 
-    public string ChatModel { get; set; } = "gemini-1.5-flash";
+    public string ChatModel { get; set; } = "gemini-2.5-flash";
 
     public int MaxRetries { get; set; } = 3;
 
