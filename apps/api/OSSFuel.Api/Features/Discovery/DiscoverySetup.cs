@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using OSSFuel.Api.Features.Discovery.Assistant;
 using OSSFuel.Api.Features.Discovery.Ingestion;
 using OSSFuel.Api.Features.Discovery.Retrieval;
 
@@ -10,6 +11,7 @@ public static class DiscoverySetup
     {
         services.AddScoped<IProjectIngestionService, ProjectIngestionService>();
         services.AddScoped<IProjectRetrievalService, ProjectRetrievalService>();
+        services.AddScoped<IProjectAssistantService, ProjectAssistantService>();
         return services;
     }
 }

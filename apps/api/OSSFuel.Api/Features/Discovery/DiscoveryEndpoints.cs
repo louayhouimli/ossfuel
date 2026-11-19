@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using OSSFuel.Api.Features.Discovery.Assistant;
 using OSSFuel.Api.Features.Discovery.Ingestion;
 using OSSFuel.Api.Features.Discovery.Retrieval;
 
@@ -15,8 +16,32 @@ public static class DiscoveryEndpoints
         group.MapPost("/projects/{id:guid}/index", IndexProjectAsync);
         group.MapPost("/projects/bulk-index", BulkIndexProjectsAsync);
         group.MapPost("/search", SearchProjectsAsync);
+        group.MapPost("/assistant/chat", ChatAsync);
+
+        app.MapPost("/assistant/chat", ChatAsync).WithTags("Assistant");
 
         return app;
+    }
+
+    private static async Task<IResult> ChatAsync(
+        AssistantChatRequest request,
+        IProjectAssistantService assistantService,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
+        {
+            return Results.BadRequest(new { error = "Request cannot be null." });
+        }
+
+        try
+        {
+            var response = await assistantService.ChatAsync(request, cancellationToken);
+            return Results.Ok(response);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(new { error = ex.Message });
+        }
     }
 
     private static async Task<IResult> SearchProjectsAsync(

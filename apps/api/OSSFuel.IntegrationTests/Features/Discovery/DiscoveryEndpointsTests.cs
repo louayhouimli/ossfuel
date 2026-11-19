@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Discovery;
+using OSSFuel.Api.Features.Discovery.Assistant;
 using OSSFuel.Api.Features.Discovery.Retrieval;
 using OSSFuel.IntegrationTests.Infrastructure;
 
@@ -164,6 +165,113 @@ public class DiscoveryEndpointsTests(ProjectsWebApplicationFactory factory)
         Assert.NotNull(results);
         Assert.Contains(results!, r => r.ProjectId == project1Id && r.Succeeded);
         Assert.Contains(results!, r => r.ProjectId == project2Id && r.Succeeded);
+    }
+
+    [Fact]
+    public async Task Chat_WithEmptyOrMissingMessages_ReturnsOkWithWelcomeGreeting()
+    {
+        var request = new AssistantChatRequest([]);
+
+        var response = await _client.PostAsJsonAsync("/api/v1/assistant/chat", request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<AssistantChatResponse>();
+        Assert.NotNull(result);
+        Assert.Equal(ProjectAssistantService.DefaultGreeting, result!.Reply);
+        Assert.Empty(result.Recommendations);
+    }
+
+    [Fact]
+    public async Task Chat_WithValidUserMessage_ReturnsOkWithRecommendations()
+    {
+        var userId = factory.SeedUser("octocat-chat-1");
+        var projectId = factory.SeedProject(userId, fullName: "octocat-chat-1/chat-db");
+
+        factory.GitHub.ReadmeContent = """
+            # High Performance Database
+            A fast, distributed document database with real-time replication.
+            """;
+
+        // Index project
+        await _client.PostAsync($"/api/v1/discovery/projects/{projectId}/index", null);
+
+        var chunkId = Guid.NewGuid();
+        factory.Gemini.ContentHandler = _ => Task.FromResult($$"""
+            ```json
+            {
+              "reply": "Based on your criteria, I recommend octocat-chat-1/chat-db.",
+              "recommendations": [
+                {
+                  "projectId": "{{projectId}}",
+                  "projectName": "octocat-chat-1/chat-db",
+                  "matchLevel": "Strong Match",
+                  "category": "Database",
+                  "technologies": ["C#", "PostgreSQL"],
+                  "whyItMatches": "High-performance distributed document database.",
+                  "activitySummary": "Active open source project.",
+                  "evidence": "Fast, distributed document database with real-time replication.",
+                  "citations": [
+                    {
+                      "chunkId": "{{chunkId}}",
+                      "headerPath": "# High Performance Database",
+                      "quote": "A fast, distributed document database with real-time replication."
+                    }
+                  ]
+                }
+              ]
+            }
+            ```
+            """);
+
+        var request = new AssistantChatRequest([
+            new ChatMessage("user", "Looking for a high performance database")
+        ]);
+
+        var response = await _client.PostAsJsonAsync("/api/v1/assistant/chat", request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<AssistantChatResponse>();
+        Assert.NotNull(result);
+        Assert.Equal("Based on your criteria, I recommend octocat-chat-1/chat-db.", result!.Reply);
+        Assert.Single(result.Recommendations);
+        Assert.Equal(projectId, result.Recommendations[0].ProjectId);
+        Assert.Equal("octocat-chat-1/chat-db", result.Recommendations[0].ProjectName);
+        Assert.Single(result.Recommendations[0].Citations);
+        Assert.Equal(chunkId, result.Recommendations[0].Citations[0].ChunkId);
+    }
+
+    [Fact]
+    public async Task Chat_WithUnparseableModelOutput_ReturnsOkWithFallbackRawText()
+    {
+        factory.Gemini.ContentHandler = _ =>
+            Task.FromResult("I am FuelBot. Here is a helpful conversational response without JSON.");
+
+        var request = new AssistantChatRequest([
+            new ChatMessage("user", "Hello there!")
+        ]);
+
+        var response = await _client.PostAsJsonAsync("/api/v1/assistant/chat", request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var result = await response.Content.ReadFromJsonAsync<AssistantChatResponse>();
+        Assert.NotNull(result);
+        Assert.Equal("I am FuelBot. Here is a helpful conversational response without JSON.", result!.Reply);
+        Assert.Empty(result.Recommendations);
+    }
+
+    [Fact]
+    public async Task Chat_SupportsBothV1AndDiscoveryRoutes()
+    {
+        var request = new AssistantChatRequest([]);
+
+        var v1Response = await _client.PostAsJsonAsync("/api/v1/assistant/chat", request);
+        var discoveryResponse = await _client.PostAsJsonAsync("/api/v1/discovery/assistant/chat", request);
+
+        Assert.Equal(HttpStatusCode.OK, v1Response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, discoveryResponse.StatusCode);
     }
 
     private sealed record ProjectIngestionResultPayload(
