@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="OSSFuel Wave Bot">
+  <title>OSSFuel Wave Bot</title>
+  <style>
+    .mark { fill: #0A0A0B; }
+    .accent { fill: #FF5E36; }
+    .eye { fill: #FFFFFF; }
+    @media (prefers-color-scheme: dark) {
+      .mark { fill: #F2F1EF; }
+      .accent { fill: #FF6F47; }
+      .eye { fill: #0A0A0B; }
+    }
+  </style>
+  <g class="mark">
+    <!-- Chat Headset / Antenna -->
+    <path d="M22 17 C22 11 26 8 32 8 C38 8 42 11 42 17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="mark"/>
+    <circle cx="21" cy="18" r="2.5" />
+    <circle cx="43" cy="18" r="2.5" />
+    <path d="M43 18 L46 25 L43 25" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mark"/>
+    <circle cx="43" cy="25" r="1.5" />
+    
+    <!-- Main Body Chassis -->
+    <g transform="translate(32, 27) scale(0.78) translate(-32, -32)">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M53.06 23.44L58 32L45 54.52L19 54.52L6 32L19 9.48L45 9.48L48.25 15.11L42.48 21.11L40.38 17.48L23.62 17.48L15.24 32L23.62 46.52L40.38 46.52L48.76 32L45.58 26.48ZM47.85 17.56L30.03 29.11L33.97 34.89L51.23 22.52ZM25 32A7 7 0 0 1 39 32A7 7 0 0 1 25 32Z"/>
+    </g>
+    
+    <!-- Left Arm Waving! -->
+    <path d="M10 28 C7 24 6 18 10 14 C12 12 14 14 13 17 L13 25 Z" />
+    <circle cx="10" cy="13" r="2" />
+    
+    <!-- Right Arm Relaxed -->
+    <rect x="54" y="27" width="3.5" height="9" rx="1.75" transform="rotate(-10 55.75 31.5)" />
+
+    <!-- Cute Biped Legs -->
+    <rect x="22" y="44" width="4" height="12" rx="2" />
+    <path d="M18 57 C18 55 20 54 23 54 C27 54 28 55 28 57 L28 60 C28 60.8 27.2 61 26 61 L20 61 C18.8 61 18 60.8 18 60 Z" />
+    
+    <rect x="38" y="44" width="4" height="12" rx="2" />
+    <path d="M36 57 C36 55 37 54 41 54 C44 54 46 55 46 57 L46 60 C46 60.8 45.2 61 44 61 L38 61 C36.8 61 36 60.8 36 60 Z" />
+  </g>
+</svg>
