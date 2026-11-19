@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Discovery;
+using OSSFuel.Api.Features.Discovery.Retrieval;
 using OSSFuel.IntegrationTests.Infrastructure;
 
 namespace OSSFuel.IntegrationTests.Features.Discovery;
@@ -12,6 +13,93 @@ public class DiscoveryEndpointsTests(ProjectsWebApplicationFactory factory)
     : IClassFixture<ProjectsWebApplicationFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
+
+    [Fact]
+    public async Task SearchProjects_WithEmptyQuery_ReturnsBadRequest()
+    {
+        var response = await _client.PostAsJsonAsync("/api/v1/discovery/search", new ProjectSearchQuery(""));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task SearchProjects_WithWhitespaceQuery_ReturnsBadRequest(string query)
+    {
+        var response = await _client.PostAsJsonAsync("/api/v1/discovery/search", new ProjectSearchQuery(query));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SearchProjects_WithValidQuery_ReturnsOkAndCandidateResults()
+    {
+        var userId = factory.SeedUser("octocat-search-1");
+        var projectId = factory.SeedProject(userId, fullName: "octocat-search-1/repo-search");
+
+        factory.GitHub.ReadmeContent = """
+            # Searchable Project
+            This project provides hybrid vector search.
+
+            ## Features
+            - Fast indexing
+            - Semantic search
+            """;
+
+        // Index project first to create chunks and embeddings
+        var indexResponse = await _client.PostAsync($"/api/v1/discovery/projects/{projectId}/index", null);
+        Assert.Equal(HttpStatusCode.OK, indexResponse.StatusCode);
+
+        // Search for project
+        var searchResponse = await _client.PostAsJsonAsync(
+            "/api/v1/discovery/search",
+            new ProjectSearchQuery("vector search"));
+
+        Assert.Equal(HttpStatusCode.OK, searchResponse.StatusCode);
+
+        var results = await searchResponse.Content.ReadFromJsonAsync<List<ProjectSearchResult>>();
+        Assert.NotNull(results);
+        Assert.NotEmpty(results!);
+
+        var match = results!.FirstOrDefault(r => r.ProjectId == projectId);
+        Assert.NotNull(match);
+        Assert.Equal("octocat-search-1/repo-search", match!.FullName);
+        Assert.NotEmpty(match.MatchedChunks);
+        Assert.InRange(match.SemanticSimilarity, 0.0f, 1.0f);
+        Assert.InRange(match.VitalityScore, 0.0f, 1.0f);
+        Assert.InRange(match.CombinedScore, 0.0f, 1.0f);
+    }
+
+    [Fact]
+    public async Task SearchProjects_WithFiltering_ExcludesMismatchedProjects()
+    {
+        var userId = factory.SeedUser("octocat-filter-1");
+        var projectId = factory.SeedProject(userId, fullName: "octocat-filter-1/repo-filter");
+
+        factory.GitHub.ReadmeContent = "# Filter Test\nContent for filtering test.";
+        await _client.PostAsync($"/api/v1/discovery/projects/{projectId}/index", null);
+
+        // Filter with non-matching language
+        var response = await _client.PostAsJsonAsync(
+            "/api/v1/discovery/search",
+            new ProjectSearchQuery("test", Language: "NonExistentLanguage"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var results = await response.Content.ReadFromJsonAsync<List<ProjectSearchResult>>();
+        Assert.NotNull(results);
+        Assert.DoesNotContain(results!, r => r.ProjectId == projectId);
+
+        // Filter with impossible minimum stars
+        var highStarResponse = await _client.PostAsJsonAsync(
+            "/api/v1/discovery/search",
+            new ProjectSearchQuery("test", MinStars: 999999));
+
+        Assert.Equal(HttpStatusCode.OK, highStarResponse.StatusCode);
+        var highStarResults = await highStarResponse.Content.ReadFromJsonAsync<List<ProjectSearchResult>>();
+        Assert.NotNull(highStarResults);
+        Assert.DoesNotContain(highStarResults!, r => r.ProjectId == projectId);
+    }
 
     [Fact]
     public async Task IndexProject_WhenProjectDoesNotExist_ReturnsNotFound()

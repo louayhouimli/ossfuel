@@ -36,7 +36,11 @@ public class OSSFuelDbContext(DbContextOptions<OSSFuelDbContext> options) : DbCo
 
         if (!Database.IsNpgsql())
         {
-            modelBuilder.Entity<ProjectChunk>().Ignore(c => c.Embedding);
+            modelBuilder.Entity<ProjectChunk>()
+                .Property(c => c.Embedding)
+                .HasConversion(
+                    v => v != null ? v.ToString() : null,
+                    s => s != null ? new Pgvector.Vector(s) : null);
         }
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using OSSFuel.Api.Features.Discovery.Ingestion;
+using OSSFuel.Api.Features.Discovery.Retrieval;
 
 namespace OSSFuel.Api.Features.Discovery;
 
@@ -13,8 +14,30 @@ public static class DiscoveryEndpoints
 
         group.MapPost("/projects/{id:guid}/index", IndexProjectAsync);
         group.MapPost("/projects/bulk-index", BulkIndexProjectsAsync);
+        group.MapPost("/search", SearchProjectsAsync);
 
         return app;
+    }
+
+    private static async Task<IResult> SearchProjectsAsync(
+        ProjectSearchQuery query,
+        IProjectRetrievalService retrievalService,
+        CancellationToken cancellationToken)
+    {
+        if (query is null || string.IsNullOrWhiteSpace(query.Query))
+        {
+            return Results.BadRequest(new { error = "Search query cannot be empty or whitespace." });
+        }
+
+        try
+        {
+            var results = await retrievalService.SearchProjectsAsync(query, cancellationToken);
+            return Results.Ok(results);
+        }
+        catch (ArgumentException ex)
+        {
+            return Results.BadRequest(new { error = ex.Message });
+        }
     }
 
     private static async Task<IResult> IndexProjectAsync(
