@@ -4,57 +4,72 @@ namespace OSSFuel.Api.Features.Discovery.Ingestion;
 
 public class MarkdownChunker : IMarkdownChunker
 {
+    private static readonly TimeSpan DefaultRegexTimeout = TimeSpan.FromSeconds(1);
+
     private static readonly Regex HtmlCommentsRegex = new(
         @"<!--[\s\S]*?-->",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled,
+        DefaultRegexTimeout);
 
     private static readonly Regex SvgRegex = new(
         @"<svg[\s\S]*?<\/svg>",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase,
+        DefaultRegexTimeout);
 
     private static readonly Regex HtmlImgRegex = new(
         @"<img\b[^>]*\/?>",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase,
+        DefaultRegexTimeout);
 
     private static readonly Regex MarkdownLinkedBadgeRegex = new(
         @"\[\s*!\[(?<alt>[^\]]*)\](?:\((?<imgurl>[^\)]*)\)|\[(?<imgref>[^\]]*)\])\s*\](?:\((?<linkurl>[^\)]*)\)|\[(?<linkref>[^\]]*)\])?",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled,
+        DefaultRegexTimeout);
 
     private static readonly Regex MarkdownImageRegex = new(
         @"!\[(?<alt>[^\]]*)\]\((?<url>[^\)]*)\)",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled,
+        DefaultRegexTimeout);
 
     private static readonly Regex ShieldsUrlRegex = new(
         @"https?:\/\/(?:img\.)?shields\.io[^\s\)\>\]]*",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase,
+        DefaultRegexTimeout);
 
     private static readonly Regex EmptyMarkdownLinkRegex = new(
         @"\[\s*\](?:\([^\)]*\)|\[[^\]]*\])",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled,
+        DefaultRegexTimeout);
 
     private static readonly Regex HtmlBrRegex = new(
         @"<(?:br|hr)\b[^>]*\/?>",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase,
+        DefaultRegexTimeout);
 
     private static readonly Regex HtmlTagsRegex = new(
         @"<\/?(div|p|span|a|h[1-6]|b|strong|i|em|u|ul|ol|li|table|thead|tbody|tr|th|td|details|summary|center|blockquote|pre|code|font|sub|sup|picture|source|section|article|header|footer|nav|kbd|small|figure|figcaption)\b[^>]*\/?>",
-        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.IgnoreCase,
+        DefaultRegexTimeout);
 
     private static readonly Regex ReferenceBadgeDefinitionRegex = new(
         @"^\s*\[[^\]]+\]:\s*https?:\/\/\S*(?:shields\.io|badge|travis-ci|coveralls|codecov)\S*$",
-        RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        RegexOptions.Compiled | RegexOptions.Multiline | RegexOptions.IgnoreCase,
+        DefaultRegexTimeout);
 
     private static readonly Regex TrailingWhitespaceRegex = new(
         @"(?m)[ \t]+$",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled,
+        DefaultRegexTimeout);
 
     private static readonly Regex ConsecutiveNewlinesRegex = new(
         @"\n{3,}",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled,
+        DefaultRegexTimeout);
 
     private static readonly Regex HeaderLineRegex = new(
         @"^(#{1,6})[ \t]+(.+)$",
-        RegexOptions.Compiled);
+        RegexOptions.Compiled,
+        DefaultRegexTimeout);
 
     private static readonly string[] FeatureKeywords =
     [

@@ -288,4 +288,18 @@ public class MarkdownChunkerTests
         Assert.NotNull(chunker);
         Assert.IsType<MarkdownChunker>(chunker);
     }
+
+    [Fact]
+    public void CleanMarkdown_ProtectsAgainstPathologicalInput_CompletingWithinTimeout()
+    {
+        // Malformed unclosed tags and nested brackets that could trigger catastrophic backtracking
+        var pathologicalInput = "<" + new string('a', 5000) + " " + string.Concat(Enumerable.Repeat("[![test](", 50)) + "https://example.com";
+
+        var startTime = DateTime.UtcNow;
+        var cleaned = MarkdownChunker.CleanMarkdown(pathologicalInput);
+        var elapsed = DateTime.UtcNow - startTime;
+
+        Assert.NotNull(cleaned);
+        Assert.True(elapsed < TimeSpan.FromSeconds(3), $"Expected completion under 3 seconds, but took {elapsed.TotalSeconds}s");
+    }
 }
