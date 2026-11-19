@@ -30,6 +30,7 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseSetting("Database:MigrateOnStartup", "false");
         builder.UseSetting("Authentication:GitHub:ClientId", "test-client-id");
         builder.UseSetting("Authentication:GitHub:ClientSecret", "test-client-secret");
+        builder.UseSetting("Payments:Provider", "mock");
 
         builder.ConfigureTestServices(services =>
         {
