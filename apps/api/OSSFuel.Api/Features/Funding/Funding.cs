@@ -7,6 +7,7 @@ namespace OSSFuel.Api.Features.Funding;
 public class Funding
 {
     public const string MockProvider = "mock";
+    public const string StripeProvider = "stripe";
 
     public Guid Id { get; init; }
 
@@ -20,7 +21,7 @@ public class Funding
 
     public FundingStatus Status { get; private set; }
 
-    public string Provider { get; init; } = MockProvider;
+    public string Provider { get; init; } = StripeProvider;
 
     public string? ProviderCheckoutSessionId { get; private set; }
 
@@ -40,7 +41,12 @@ public class Funding
 
     public User Sponsor { get; init; } = null!;
 
-    public static Funding Create(Guid projectId, Guid sponsorUserId, long amountMinor, DateTimeOffset now) =>
+    public static Funding Create(
+        Guid projectId,
+        Guid sponsorUserId,
+        long amountMinor,
+        DateTimeOffset now,
+        string provider = StripeProvider) =>
         new()
         {
             Id = Guid.NewGuid(),
@@ -49,7 +55,7 @@ public class Funding
             AmountMinor = amountMinor,
             Currency = Money.Currency,
             Status = FundingStatus.Pending,
-            Provider = MockProvider,
+            Provider = provider,
             CreatedAt = now,
             UpdatedAt = now,
         };

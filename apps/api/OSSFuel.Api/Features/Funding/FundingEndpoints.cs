@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using OSSFuel.Api.Common;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Users;
+using Stripe;
 
 namespace OSSFuel.Api.Features.Funding;
 
@@ -24,6 +25,7 @@ public static class FundingEndpoints
         group.MapGet("/fundings", GetFundingsAsync).RequireAuthorization();
         group.MapGet("/fundings/{id:guid}", GetFundingAsync).RequireAuthorization();
         group.MapPost("/fundings/{id:guid}/cancel", CancelFundingAsync).RequireAuthorization();
+        group.MapPost("/fundings/stripe-webhook", StripeWebhookEndpoint.HandleWebhookAsync).AllowAnonymous();
 
         if (includeMockEndpoints)
         {
@@ -96,7 +98,8 @@ public static class FundingEndpoints
         }
 
         var now = DateTimeOffset.UtcNow;
-        var funding = Funding.Create(project.Id, user.Id, request.AmountMinor, now);
+        var provider = payments is StripePaymentProvider ? Funding.StripeProvider : Funding.MockProvider;
+        var funding = Funding.Create(project.Id, user.Id, request.AmountMinor, now, provider);
         db.Fundings.Add(funding);
         await db.SaveChangesAsync(cancellationToken);
 
@@ -106,7 +109,7 @@ public static class FundingEndpoints
             funding.MarkCheckoutCreated(session.SessionId, session.CheckoutUrl, DateTimeOffset.UtcNow);
             await db.SaveChangesAsync(cancellationToken);
         }
-        catch (HttpRequestException)
+        catch (Exception ex) when (ex is HttpRequestException or StripeException)
         {
             funding.MarkFailed("The checkout session could not be created.", DateTimeOffset.UtcNow);
             await db.SaveChangesAsync(cancellationToken);

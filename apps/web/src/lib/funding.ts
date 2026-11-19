@@ -138,3 +138,33 @@ export function parseAmountToMinor(value: string): number | null {
 
   return Number(match[1]) * 100 + Number((match[2] ?? "").padEnd(2, "0"))
 }
+
+/**
+ * Verifies that a checkout URL is either an official Stripe Checkout URL
+ * or a same-origin / relative path (for mock checkout in dev).
+ */
+export function isSafeCheckoutUrl(
+  url: string,
+  currentOrigin = typeof window !== "undefined" ? window.location.origin : ""
+): boolean {
+  if (url.startsWith("https://checkout.stripe.com/")) {
+    return true
+  }
+
+  try {
+    const base = currentOrigin || "http://localhost"
+    const parsed = new URL(url, base)
+    if (
+      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+      Boolean(currentOrigin) &&
+      parsed.origin === currentOrigin
+    ) {
+      return true
+    }
+  } catch {
+    return false
+  }
+
+  return false
+}
+

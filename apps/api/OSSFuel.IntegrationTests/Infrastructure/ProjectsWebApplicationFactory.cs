@@ -33,6 +33,7 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
         builder.UseSetting(
             "Authentication:Mobile:Jwt:SigningKey",
             "integration-test-mobile-jwt-signing-key-at-least-32-bytes");
+        builder.UseSetting("Payments:Provider", "mock");
 
         builder.ConfigureTestServices(services =>
         {
