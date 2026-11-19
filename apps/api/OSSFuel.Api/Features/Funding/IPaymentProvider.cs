@@ -12,6 +12,10 @@ public interface IPaymentProvider
     Task<ProviderSession> CreateCheckoutSessionAsync(
         Funding funding,
         CancellationToken cancellationToken);
+
+    Task ExpireCheckoutSessionAsync(
+        string sessionId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed record ProviderSession(string SessionId, string CheckoutUrl);

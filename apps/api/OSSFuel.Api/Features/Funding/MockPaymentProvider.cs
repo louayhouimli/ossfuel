@@ -21,4 +21,9 @@ public sealed class MockPaymentProvider(IConfiguration configuration) : IPayment
             funding.Id.ToString("N"),
             $"{webAppUrl.TrimEnd('/')}/mock-checkout/{funding.Id}"));
     }
+
+    public Task ExpireCheckoutSessionAsync(
+        string sessionId,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 }

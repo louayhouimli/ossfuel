@@ -12,4 +12,9 @@ public sealed class UnconfiguredPaymentProvider : IPaymentProvider
         Funding funding,
         CancellationToken cancellationToken) =>
         throw new InvalidOperationException("Payments are not configured.");
+
+    public Task ExpireCheckoutSessionAsync(
+        string sessionId,
+        CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
 }

@@ -174,6 +174,8 @@ public class FundingCreationTests : IDisposable
 
         var cancelled = await cancelResponse.Content.ReadFromJsonAsync<FundingPayload>();
         Assert.Equal("cancelled", cancelled!.Status);
+        Assert.Equal(_factory.Payments.LastSessionId, _factory.Payments.LastExpiredSessionId);
+        Assert.Equal(1, _factory.Payments.ExpireCallCount);
 
         var newResponse = await client.PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 5000 });
         Assert.Equal(HttpStatusCode.Created, newResponse.StatusCode);

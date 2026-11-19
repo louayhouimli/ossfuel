@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Balances;
@@ -16,13 +18,14 @@ public sealed class StripePaymentProvider : IPaymentProvider
     private readonly IOptions<StripeOptions> _stripeOptions;
     private readonly IConfiguration _configuration;
     private readonly OSSFuelDbContext _db;
+    private readonly ILogger<StripePaymentProvider> _logger;
     private readonly SessionService? _sessionService;
 
     public StripePaymentProvider(
         IOptions<StripeOptions> stripeOptions,
         IConfiguration configuration,
         OSSFuelDbContext db)
-        : this(stripeOptions, configuration, db, sessionService: null)
+        : this(stripeOptions, configuration, db, logger: null, sessionService: null)
     {
     }
 
@@ -31,10 +34,21 @@ public sealed class StripePaymentProvider : IPaymentProvider
         IConfiguration configuration,
         OSSFuelDbContext db,
         SessionService? sessionService)
+        : this(stripeOptions, configuration, db, logger: null, sessionService: sessionService)
+    {
+    }
+
+    public StripePaymentProvider(
+        IOptions<StripeOptions> stripeOptions,
+        IConfiguration configuration,
+        OSSFuelDbContext db,
+        ILogger<StripePaymentProvider>? logger,
+        SessionService? sessionService)
     {
         _stripeOptions = stripeOptions;
         _configuration = configuration;
         _db = db;
+        _logger = logger ?? NullLogger<StripePaymentProvider>.Instance;
         _sessionService = sessionService;
     }
 
@@ -104,5 +118,30 @@ public sealed class StripePaymentProvider : IPaymentProvider
             SuccessUrl = successUrl,
             CancelUrl = cancelUrl,
         };
+    }
+
+    public async Task ExpireCheckoutSessionAsync(
+        string sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsConfigured || string.IsNullOrWhiteSpace(sessionId))
+        {
+            return;
+        }
+
+        var service = _sessionService ?? new SessionService(new StripeClient(_stripeOptions.Value.ApiKey));
+
+        try
+        {
+            await service.ExpireAsync(sessionId, cancellationToken: cancellationToken);
+        }
+        catch (StripeException ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Failed to expire Stripe checkout session {SessionId}: {ErrorMessage}",
+                sessionId,
+                ex.Message);
+        }
     }
 }

@@ -203,6 +203,7 @@ public static class FundingEndpoints
         ClaimsPrincipal principal,
         OSSFuelDbContext db,
         FundingCreditService credits,
+        IPaymentProvider payments,
         CancellationToken cancellationToken)
     {
         var user = await CurrentUser.LoadAsync(principal, db, cancellationToken);
@@ -230,6 +231,11 @@ public static class FundingEndpoints
         if (funding.Status != FundingStatus.Pending)
         {
             return Results.Ok(ToResponse(funding, funding.Project.FullName));
+        }
+
+        if (!string.IsNullOrWhiteSpace(funding.ProviderCheckoutSessionId) && payments.IsConfigured)
+        {
+            await payments.ExpireCheckoutSessionAsync(funding.ProviderCheckoutSessionId, cancellationToken);
         }
 
         var now = DateTimeOffset.UtcNow;

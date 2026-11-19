@@ -15,6 +15,8 @@ public class StripePaymentProviderTests
     private sealed class TestSessionService : SessionService
     {
         public SessionCreateOptions? LastOptions { get; private set; }
+        public string? LastExpiredSessionId { get; private set; }
+        public Exception? ExpireException { get; set; }
         public Session SessionToReturn { get; set; } = new()
         {
             Id = "cs_test_session_id",
@@ -28,6 +30,21 @@ public class StripePaymentProviderTests
         {
             LastOptions = options;
             return Task.FromResult(SessionToReturn);
+        }
+
+        public override Task<Session> ExpireAsync(
+            string id,
+            SessionExpireOptions? options = null,
+            RequestOptions? requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            LastExpiredSessionId = id;
+            if (ExpireException is not null)
+            {
+                throw ExpireException;
+            }
+
+            return Task.FromResult(new Session { Id = id, Status = "expired" });
         }
     }
 
@@ -251,5 +268,73 @@ public class StripePaymentProviderTests
             now,
             OSSFuel.Api.Features.Funding.Funding.MockProvider);
         Assert.Equal(OSSFuel.Api.Features.Funding.Funding.MockProvider, mockFunding.Provider);
+    }
+
+    [Fact]
+    public async Task ExpireCheckoutSessionAsync_WhenNotConfigured_DoesNothing()
+    {
+        var stripeOptions = Options.Create(new StripeOptions { ApiKey = null });
+        var config = new ConfigurationBuilder().Build();
+        using var db = CreateInMemoryDbContext();
+        var sessionService = new TestSessionService();
+
+        var provider = new StripePaymentProvider(stripeOptions, config, db, sessionService);
+
+        await provider.ExpireCheckoutSessionAsync("cs_test_123");
+
+        Assert.Null(sessionService.LastExpiredSessionId);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task ExpireCheckoutSessionAsync_WhenSessionIdNullOrWhitespace_DoesNothing(string? sessionId)
+    {
+        var stripeOptions = Options.Create(new StripeOptions { ApiKey = "sk_test_123" });
+        var config = new ConfigurationBuilder().Build();
+        using var db = CreateInMemoryDbContext();
+        var sessionService = new TestSessionService();
+
+        var provider = new StripePaymentProvider(stripeOptions, config, db, sessionService);
+
+        await provider.ExpireCheckoutSessionAsync(sessionId!);
+
+        Assert.Null(sessionService.LastExpiredSessionId);
+    }
+
+    [Fact]
+    public async Task ExpireCheckoutSessionAsync_CallsStripeSessionExpireAsync()
+    {
+        var stripeOptions = Options.Create(new StripeOptions { ApiKey = "sk_test_123" });
+        var config = new ConfigurationBuilder().Build();
+        using var db = CreateInMemoryDbContext();
+        var sessionService = new TestSessionService();
+
+        var provider = new StripePaymentProvider(stripeOptions, config, db, sessionService);
+
+        await provider.ExpireCheckoutSessionAsync("cs_test_session_target");
+
+        Assert.Equal("cs_test_session_target", sessionService.LastExpiredSessionId);
+    }
+
+    [Fact]
+    public async Task ExpireCheckoutSessionAsync_WhenStripeThrowsStripeException_LogsAndDoesNotThrow()
+    {
+        var stripeOptions = Options.Create(new StripeOptions { ApiKey = "sk_test_123" });
+        var config = new ConfigurationBuilder().Build();
+        using var db = CreateInMemoryDbContext();
+        var sessionService = new TestSessionService
+        {
+            ExpireException = new StripeException("The session cannot be expired because it is already complete."),
+        };
+
+        var provider = new StripePaymentProvider(stripeOptions, config, db, sessionService);
+
+        var exception = await Record.ExceptionAsync(() =>
+            provider.ExpireCheckoutSessionAsync("cs_test_already_complete"));
+
+        Assert.Null(exception);
+        Assert.Equal("cs_test_already_complete", sessionService.LastExpiredSessionId);
     }
 }

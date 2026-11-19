@@ -10,6 +10,10 @@ public sealed class FakePaymentProvider : IPaymentProvider
 
     public string? LastSessionId { get; private set; }
 
+    public string? LastExpiredSessionId { get; private set; }
+
+    public int ExpireCallCount { get; private set; }
+
     public Task<ProviderSession> CreateCheckoutSessionAsync(
         Funding funding,
         CancellationToken cancellationToken)
@@ -24,5 +28,15 @@ public sealed class FakePaymentProvider : IPaymentProvider
         return Task.FromResult(new ProviderSession(
             LastSessionId,
             $"https://payments.test/checkout/{funding.Id}"));
+    }
+
+    public Task ExpireCheckoutSessionAsync(
+        string sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        LastExpiredSessionId = sessionId;
+        ExpireCallCount++;
+
+        return Task.CompletedTask;
     }
 }

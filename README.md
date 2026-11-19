@@ -42,7 +42,7 @@ The repository contains:
 - **Maintainer Dashboard & Audit Logs**:
   - Web UI for generating and revoking keys.
   - Real-time token usage logs showing prompt tokens, completion tokens, and dollar deductions.
-- **Test Suite**: 152 automated tests (36 unit tests and 116 integration tests) covering all authentication, funding, gateway, and ledger flows.
+- **Test Suite**: 158 automated tests (42 unit tests and 116 integration tests) covering all authentication, funding, gateway, and ledger flows.
 
 ## Architecture
 
