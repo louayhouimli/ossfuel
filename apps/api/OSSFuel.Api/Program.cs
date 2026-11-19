@@ -4,6 +4,7 @@ using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.ApiKeys;
 using OSSFuel.Api.Features.Auth;
 using OSSFuel.Api.Features.Balances;
+using OSSFuel.Api.Features.Discovery.Gemini;
 using OSSFuel.Api.Features.Funding;
 using OSSFuel.Api.Features.Gateway;
 using OSSFuel.Api.Features.GitHub;
@@ -41,6 +42,7 @@ builder.Services.AddAuthFeature(builder.Configuration);
 builder.Services.AddGitHubFeature(builder.Configuration);
 builder.Services.AddFundingFeature(builder.Configuration, builder.Environment);
 builder.Services.AddGatewayFeature(builder.Configuration, builder.Environment);
+builder.Services.AddGeminiClient(builder.Configuration);
 
 var app = builder.Build();
 
