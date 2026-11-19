@@ -7,6 +7,7 @@ namespace OSSFuel.Api.Features.Funding;
 public class Funding
 {
     public const string MockProvider = "mock";
+    public const string StripeProvider = "stripe";
 
     public Guid Id { get; init; }
 
