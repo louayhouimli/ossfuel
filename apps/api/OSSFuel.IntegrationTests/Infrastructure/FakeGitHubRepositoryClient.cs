@@ -40,6 +40,24 @@ public sealed class FakeGitHubRepositoryClient : IGitHubRepositoryClient
             ? Task.FromResult(Repository)
             : Task.FromException<GitHubRepository?>(GetException);
     }
+
+    public string? ReadmeContent { get; set; }
+
+    public Exception? ReadmeException { get; set; }
+
+    public Task<string?> GetReadmeAsync(
+        string? accessToken,
+        string owner,
+        string name,
+        CancellationToken cancellationToken = default)
+    {
+        LastAccessToken = accessToken;
+        LastRequestedFullName = $"{owner}/{name}";
+
+        return ReadmeException is null
+            ? Task.FromResult(ReadmeContent)
+            : Task.FromException<string?>(ReadmeException);
+    }
 }
 
 public static class TestRepository

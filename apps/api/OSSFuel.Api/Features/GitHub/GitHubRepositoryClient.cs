@@ -37,6 +37,34 @@ public class GitHubRepositoryClient(HttpClient httpClient) : IGitHubRepositoryCl
         return repository is null ? null : ToGitHubRepository(repository);
     }
 
+    public async Task<string?> GetReadmeAsync(
+        string? accessToken,
+        string owner,
+        string name,
+        CancellationToken cancellationToken = default)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"repos/{owner}/{name}/readme");
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
+        request.Headers.UserAgent.ParseAdd("OSSFuel");
+        request.Headers.Accept.ParseAdd("application/vnd.github.raw+json");
+        request.Headers.TryAddWithoutValidation("X-GitHub-Api-Version", "2022-11-28");
+
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadAsStringAsync(cancellationToken);
+    }
+
     private async Task<T?> GetAsync<T>(string requestUri, string accessToken, CancellationToken cancellationToken)
         where T : class
     {

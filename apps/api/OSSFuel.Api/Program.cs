@@ -4,6 +4,7 @@ using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.ApiKeys;
 using OSSFuel.Api.Features.Auth;
 using OSSFuel.Api.Features.Balances;
+using OSSFuel.Api.Features.Discovery;
 using OSSFuel.Api.Features.Discovery.Gemini;
 using OSSFuel.Api.Features.Funding;
 using OSSFuel.Api.Features.Gateway;
@@ -43,6 +44,7 @@ builder.Services.AddGitHubFeature(builder.Configuration);
 builder.Services.AddFundingFeature(builder.Configuration, builder.Environment);
 builder.Services.AddGatewayFeature(builder.Configuration, builder.Environment);
 builder.Services.AddGeminiClient(builder.Configuration);
+builder.Services.AddDiscoveryFeature();
 
 var app = builder.Build();
 
@@ -75,6 +77,7 @@ v1.MapBalanceEndpoints();
 v1.MapFundingEndpoints(FundingSetup.UsesMockProvider(builder.Configuration, builder.Environment));
 v1.MapApiKeyEndpoints();
 v1.MapGatewayEndpoints();
+v1.MapDiscoveryEndpoints();
 
 app.MapHealthEndpoints();
 app.MapOpenAiCompatEndpoints();
