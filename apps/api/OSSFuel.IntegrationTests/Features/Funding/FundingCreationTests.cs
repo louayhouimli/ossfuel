@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using OSSFuel.Api.Features.Funding;
+using Stripe;
 
 namespace OSSFuel.IntegrationTests.Features.Funding;
 
@@ -105,6 +106,25 @@ public class FundingCreationTests : IDisposable
         var ownerId = _factory.SeedUser(login: "owner");
         var projectId = _factory.SeedProject(ownerId);
         _factory.Payments.CreateException = new HttpRequestException("payments are down");
+
+        var response = await _factory
+            .CreateClientFor(sponsorId)
+            .PostAsJsonAsync("/api/v1/fundings", new { projectId, amountMinor = 2500 });
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+
+        var stored = _factory.ReadDb(db => db.Fundings.Single());
+        Assert.Equal(FundingStatus.Failed, stored.Status);
+        Assert.NotNull(stored.FailureReason);
+    }
+
+    [Fact]
+    public async Task CreateFunding_WhenStripeFails_ReturnsBadGatewayAndStoresTheFailure()
+    {
+        var sponsorId = _factory.SeedUser();
+        var ownerId = _factory.SeedUser(login: "owner");
+        var projectId = _factory.SeedProject(ownerId);
+        _factory.Payments.CreateException = new StripeException("stripe connection failure");
 
         var response = await _factory
             .CreateClientFor(sponsorId)

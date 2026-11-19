@@ -5,6 +5,7 @@ import { ApiError } from "@/lib/api"
 import {
   createFunding,
   formatMoney,
+  isSafeCheckoutUrl,
   MAX_FUNDING_MINOR,
   MIN_FUNDING_MINOR,
   parseAmountToMinor,
@@ -36,7 +37,7 @@ export function FundProjectForm({ projectId }: FundProjectFormProps) {
     onSuccess: async (funding) => {
       await queryClient.invalidateQueries({ queryKey: ["fundings"] })
 
-      if (funding.checkoutUrl) {
+      if (funding.checkoutUrl && isSafeCheckoutUrl(funding.checkoutUrl)) {
         window.location.assign(funding.checkoutUrl)
         return
       }
