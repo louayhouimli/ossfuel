@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using OSSFuel.Api.Features.Discovery.Assistant;
 using OSSFuel.Api.Features.Discovery.Ingestion;
 using OSSFuel.Api.Features.Discovery.Retrieval;
@@ -67,9 +69,17 @@ public static class DiscoveryEndpoints
 
     private static async Task<IResult> IndexProjectAsync(
         Guid id,
+        HttpContext context,
+        IConfiguration config,
+        IHostEnvironment env,
         IProjectIngestionService ingestionService,
         CancellationToken cancellationToken)
     {
+        if (!IsAuthorizedForIndexing(context, config, env))
+        {
+            return Results.Unauthorized();
+        }
+
         var result = await ingestionService.IngestProjectAsync(id, cancellationToken);
         if (!result.Succeeded && result.Error == "Project not found")
         {
@@ -80,10 +90,41 @@ public static class DiscoveryEndpoints
     }
 
     private static async Task<IResult> BulkIndexProjectsAsync(
+        HttpContext context,
+        IConfiguration config,
+        IHostEnvironment env,
         IProjectIngestionService ingestionService,
         CancellationToken cancellationToken)
     {
+        if (!IsAuthorizedForIndexing(context, config, env))
+        {
+            return Results.Unauthorized();
+        }
+
         var results = await ingestionService.IngestAllProjectsAsync(cancellationToken);
         return Results.Ok(results);
+    }
+
+    private static bool IsAuthorizedForIndexing(HttpContext context, IConfiguration config, IHostEnvironment env)
+    {
+        if (env.IsDevelopment() || env.IsEnvironment("Testing"))
+        {
+            return true;
+        }
+
+        if (context.User.Identity?.IsAuthenticated is true)
+        {
+            return true;
+        }
+
+        var adminKey = config["Discovery:AdminKey"];
+        if (!string.IsNullOrEmpty(adminKey) &&
+            context.Request.Headers.TryGetValue("X-Admin-Key", out var headerKey) &&
+            string.Equals(headerKey, adminKey, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return false;
     }
 }

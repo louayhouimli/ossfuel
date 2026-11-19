@@ -12,6 +12,7 @@ public static class DiscoverySetup
         services.AddScoped<IProjectIngestionService, ProjectIngestionService>();
         services.AddScoped<IProjectRetrievalService, ProjectRetrievalService>();
         services.AddScoped<IProjectAssistantService, ProjectAssistantService>();
+        services.AddHostedService<ProjectIndexingBackgroundService>();
         return services;
     }
 }
