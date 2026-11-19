@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Balances;
+using OSSFuel.Api.Features.Discovery.Ingestion;
 using OSSFuel.Api.Features.Funding;
 using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Users;
@@ -112,6 +113,7 @@ public static class ProjectEndpoints
         IGitHubRepositoryClient gitHub,
         IGitHubTokenProtector protector,
         ILoggerFactory loggerFactory,
+        IServiceScopeFactory scopeFactory,
         CancellationToken cancellationToken)
     {
         var user = await CurrentUser.LoadAsync(principal, db, cancellationToken);
@@ -171,6 +173,23 @@ public static class ProjectEndpoints
 
         project.ApplySnapshot(repository, DateTimeOffset.UtcNow);
         await db.SaveChangesAsync(cancellationToken);
+
+        // Fire-and-forget background re-indexing of README chunks
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var ingestion = scope.ServiceProvider.GetRequiredService<IProjectIngestionService>();
+                await ingestion.IngestProjectAsync(project.Id);
+            }
+            catch (Exception ex)
+            {
+                loggerFactory
+                    .CreateLogger(nameof(ProjectEndpoints))
+                    .LogWarning(ex, "Background re-indexing failed for refreshed project {FullName}", project.FullName);
+            }
+        });
 
         return Results.Ok(ToResponse(project));
     }
@@ -242,6 +261,7 @@ public static class ProjectEndpoints
         IGitHubRepositoryClient gitHub,
         IGitHubTokenProtector protector,
         ILoggerFactory loggerFactory,
+        IServiceScopeFactory scopeFactory,
         CancellationToken cancellationToken)
     {
         var user = await CurrentUser.LoadAsync(principal, db, cancellationToken);
@@ -321,6 +341,23 @@ public static class ProjectEndpoints
             // A concurrent import won the unique index race.
             return AlreadyRegisteredProblem();
         }
+
+        // Fire-and-forget background auto-indexing so newly registered project is immediately discoverable
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var ingestion = scope.ServiceProvider.GetRequiredService<IProjectIngestionService>();
+                await ingestion.IngestProjectAsync(project.Id);
+            }
+            catch (Exception ex)
+            {
+                loggerFactory
+                    .CreateLogger(nameof(ProjectEndpoints))
+                    .LogWarning(ex, "Background auto-indexing failed for newly created project {FullName}", project.FullName);
+            }
+        });
 
         return Results.Created($"/api/v1/projects/{project.Id}", ToResponse(project));
     }

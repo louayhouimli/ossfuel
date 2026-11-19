@@ -8,6 +8,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { QueryClient } from "@tanstack/react-query"
 import { TanStackDevtools } from "@tanstack/react-devtools"
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools"
+import { AssistantWidget } from "@/components/assistant-widget"
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
@@ -38,6 +39,7 @@ function RootComponent() {
     <React.Fragment>
       <HeadContent />
       <Outlet />
+      <AssistantWidget />
       <TanStackDevtools
         plugins={[
           {

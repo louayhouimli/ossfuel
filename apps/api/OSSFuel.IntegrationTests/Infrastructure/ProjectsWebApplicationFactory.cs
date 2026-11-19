@@ -6,8 +6,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using OSSFuel.Api.Database;
 using OSSFuel.Api.Features.Balances;
+using OSSFuel.Api.Features.Discovery.Gemini;
+using OSSFuel.Api.Features.Discovery.Ingestion;
 using OSSFuel.Api.Features.Funding;
 using OSSFuel.Api.Features.GitHub;
 using OSSFuel.Api.Features.Projects;
@@ -24,6 +27,8 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
     public FakeGitHubRepositoryClient GitHub { get; } = new();
 
     public FakePaymentProvider Payments { get; } = new();
+
+    public FakeGeminiClient Gemini { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -48,6 +53,20 @@ public class ProjectsWebApplicationFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IPaymentProvider>();
             services.AddSingleton<IPaymentProvider>(Payments);
+
+            services.RemoveAll<IGeminiClient>();
+            services.AddSingleton<IGeminiClient>(Gemini);
+
+            services.RemoveAll<IProjectIngestionService>();
+            services.AddScoped<IProjectIngestionService>(sp => new ProjectIngestionService(
+                sp.GetRequiredService<OSSFuelDbContext>(),
+                sp.GetRequiredService<IGitHubRepositoryClient>(),
+                sp.GetRequiredService<IGitHubTokenProtector>(),
+                sp.GetRequiredService<IMarkdownChunker>(),
+                sp.GetRequiredService<IGeminiClient>(),
+                sp.GetRequiredService<ILogger<ProjectIngestionService>>(),
+                TimeProvider.System,
+                TimeSpan.Zero));
         });
     }
 

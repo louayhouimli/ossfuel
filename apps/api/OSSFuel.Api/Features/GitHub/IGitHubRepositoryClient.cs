@@ -11,4 +11,10 @@ public interface IGitHubRepositoryClient
         string owner,
         string name,
         CancellationToken cancellationToken);
+
+    Task<string?> GetReadmeAsync(
+        string? accessToken,
+        string owner,
+        string name,
+        CancellationToken cancellationToken = default);
 }

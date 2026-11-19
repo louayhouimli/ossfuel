@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OSSFuel.Api.Database;
+using Pgvector;
 
 #nullable disable
 
@@ -20,6 +21,7 @@ namespace OSSFuel.Api.Migrations
                 .HasAnnotation("ProductVersion", "10.0.11")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("OSSFuel.Api.Features.ApiKeys.ProjectApiKey", b =>
@@ -153,6 +155,49 @@ namespace OSSFuel.Api.Migrations
                     b.HasIndex("AIBalanceId", "CreatedAt");
 
                     b.ToTable("BalanceTransactions");
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Discovery.ProjectChunk", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ChunkType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Vector>("Embedding")
+                        .HasColumnType("vector(768)");
+
+                    b.Property<string>("HeaderPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("LastUpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Embedding");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Embedding"), "hnsw");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Embedding"), new[] { "vector_cosine_ops" });
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("project_chunks", (string)null);
                 });
 
             modelBuilder.Entity("OSSFuel.Api.Features.Funding.Funding", b =>
@@ -479,6 +524,17 @@ namespace OSSFuel.Api.Migrations
                         .HasForeignKey("AIBalanceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("OSSFuel.Api.Features.Discovery.ProjectChunk", b =>
+                {
+                    b.HasOne("OSSFuel.Api.Features.Projects.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("OSSFuel.Api.Features.Funding.Funding", b =>

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OSSFuel.Api.Features.ApiKeys;
 using OSSFuel.Api.Features.Balances;
+using OSSFuel.Api.Features.Discovery;
 using OSSFuel.Api.Features.Funding;
 using OSSFuel.Api.Features.Gateway;
 using OSSFuel.Api.Features.Projects;
@@ -13,6 +14,8 @@ public class OSSFuelDbContext(DbContextOptions<OSSFuelDbContext> options) : DbCo
     public DbSet<User> Users => Set<User>();
 
     public DbSet<Project> Projects => Set<Project>();
+
+    public DbSet<ProjectChunk> ProjectChunks => Set<ProjectChunk>();
 
     public DbSet<AIBalance> AIBalances => Set<AIBalance>();
 
@@ -28,6 +31,16 @@ public class OSSFuelDbContext(DbContextOptions<OSSFuelDbContext> options) : DbCo
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("vector");
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OSSFuelDbContext).Assembly);
+
+        if (!Database.IsNpgsql())
+        {
+            modelBuilder.Entity<ProjectChunk>()
+                .Property(c => c.Embedding)
+                .HasConversion(
+                    v => v != null ? v.ToString() : null,
+                    s => s != null ? new Pgvector.Vector(s) : null);
+        }
     }
 }

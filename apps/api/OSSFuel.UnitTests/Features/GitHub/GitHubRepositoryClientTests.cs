@@ -118,6 +118,63 @@ public class GitHubRepositoryClientTests
         Assert.False(repository!.CanPush);
     }
 
+    [Fact]
+    public async Task GetReadmeAsync_ReturnsRawMarkdownContent()
+    {
+        HttpRequestMessage? captured = null;
+        const string readmeContent = "# Hello-World\n\nThis is a sample readme.";
+        var handler = new StubHttpMessageHandler(request =>
+        {
+            captured = request;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(readmeContent, Encoding.UTF8, "application/vnd.github.raw+json"),
+            };
+        });
+        var client = CreateClient(handler);
+
+        var result = await client.GetReadmeAsync("secret-token", "octocat", "Hello-World");
+
+        Assert.Equal(readmeContent, result);
+        Assert.NotNull(captured);
+        Assert.Equal("/repos/octocat/Hello-World/readme", captured!.RequestUri?.AbsolutePath);
+        Assert.Equal("Bearer", captured.Headers.Authorization?.Scheme);
+        Assert.Equal("secret-token", captured.Headers.Authorization?.Parameter);
+        Assert.Contains(captured.Headers.Accept, h => h.MediaType == "application/vnd.github.raw+json");
+    }
+
+    [Fact]
+    public async Task GetReadmeAsync_WhenNotFound_ReturnsNull()
+    {
+        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
+        var client = CreateClient(handler);
+
+        var result = await client.GetReadmeAsync("token", "octocat", "no-readme");
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetReadmeAsync_WithoutToken_DoesNotIncludeAuthorizationHeader()
+    {
+        HttpRequestMessage? captured = null;
+        var handler = new StubHttpMessageHandler(request =>
+        {
+            captured = request;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("# Public Readme", Encoding.UTF8, "text/plain"),
+            };
+        });
+        var client = CreateClient(handler);
+
+        var result = await client.GetReadmeAsync(null, "octocat", "public-repo");
+
+        Assert.Equal("# Public Readme", result);
+        Assert.NotNull(captured);
+        Assert.Null(captured!.Headers.Authorization);
+    }
+
     private const string MinimalRepoJson = """
         {
           "id": 42,

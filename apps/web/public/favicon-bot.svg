@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="OSSFuel Buddy Bot">
+  <title>OSSFuel Buddy Bot</title>
+  <style>
+    .mark { fill: #0A0A0B; }
+    .accent { fill: #FF5E36; }
+    .eye { fill: #FFFFFF; }
+    @media (prefers-color-scheme: dark) {
+      .mark { fill: #F2F1EF; }
+      .accent { fill: #FF6F47; }
+      .eye { fill: #0A0A0B; }
+    }
+  </style>
+  <g class="mark">
+    <!-- Little Antenna with glowing node -->
+    <rect x="30.5" y="2" width="3" height="6" rx="1.5" />
+    <circle cx="32" cy="2.5" r="2.5" />
+    <!-- Arms -->
+    <rect x="6.5" y="26" width="3.5" height="9" rx="1.75" transform="rotate(15 8.25 30.5)" />
+    <rect x="54" y="26" width="3.5" height="9" rx="1.75" transform="rotate(-15 55.75 30.5)" />
+    <!-- Main Body Chassis -->
+    <g transform="translate(32, 25) scale(0.80) translate(-32, -32)">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M53.06 23.44L58 32L45 54.52L19 54.52L6 32L19 9.48L45 9.48L48.25 15.11L42.48 21.11L40.38 17.48L23.62 17.48L15.24 32L23.62 46.52L40.38 46.52L48.76 32L45.58 26.48ZM47.85 17.56L30.03 29.11L33.97 34.89L51.23 22.52ZM25 32A7 7 0 0 1 39 32A7 7 0 0 1 25 32Z"/>
+    </g>
+    <!-- Cute Robot Legs -->
+    <!-- Left Leg & Foot -->
+    <rect x="20" y="42" width="4.5" height="13" rx="2.25" />
+    <path d="M16 57 C16 55 18 53.5 22 53.5 C25 53.5 26.5 55 26.5 57 L26.5 59.5 C26.5 60.5 25.5 61 24.5 61 L18 61 C16.5 61 16 60 16 59.5 Z" />
+    <!-- Right Leg & Foot -->
+    <rect x="39.5" y="42" width="4.5" height="13" rx="2.25" />
+    <path d="M37.5 57 C37.5 55 39 53.5 42 53.5 C46 53.5 48 55 48 57 L48 59.5 C48 60.5 47.5 61 46 61 L39.5 61 C38.5 61 37.5 60.5 37.5 59.5 Z" />
+  </g>
+  <!-- Friendly Bot Eyes inside the core -->
+  <!-- Center of body is at (32, 25). Core radius is 7*0.8 = 5.6 -->
+  <g class="eye">
+    <ellipse cx="30" cy="25" rx="1.2" ry="2" />
+    <ellipse cx="34" cy="25" rx="1.2" ry="2" />
+  </g>
+</svg>
