@@ -1,11 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Info, Loader2 } from "lucide-react"
 import { FundingStatusBadge } from "@/components/funding-status"
 import { Loader } from "@/components/loader"
 import { PageHeader } from "@/components/page-header"
 import { ApiError } from "@/lib/api"
-import { cancelFunding, formatMoney, fundingQueryOptions } from "@/lib/funding"
+import {
+  cancelFunding,
+  formatMoney,
+  fundingQueryOptions,
+  isSafeCheckoutUrl,
+} from "@/lib/funding"
 import { buttonPrimary, buttonOutline, eyebrowItem, panel } from "@/lib/styles"
 import { cn } from "@workspace/ui/lib/utils"
 
@@ -14,9 +19,24 @@ const timestampFormat = new Intl.DateTimeFormat(undefined, {
   timeStyle: "short",
 })
 
+type FundingSearchParams = {
+  session_id?: string
+  cancelled?: boolean
+}
+
 export const Route = createFileRoute(
   "/_site/_authenticated/fundings/$fundingId"
 )({
+  validateSearch: (search: Record<string, unknown>): FundingSearchParams => ({
+    session_id:
+      typeof search.session_id === "string" && search.session_id.length > 0
+        ? search.session_id
+        : undefined,
+    cancelled:
+      search.cancelled === true || search.cancelled === "true"
+        ? true
+        : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Funding | OSSFuel" },
@@ -32,13 +52,18 @@ export const Route = createFileRoute(
 
 function FundingPage() {
   const { fundingId } = Route.useParams()
+  const { session_id, cancelled } = Route.useSearch()
   const queryClient = useQueryClient()
   const {
     data: funding,
     isLoading,
     isError,
     error,
-  } = useQuery(fundingQueryOptions(fundingId))
+  } = useQuery({
+    ...fundingQueryOptions(fundingId),
+    refetchInterval: (query) =>
+      query.state.data?.status === "pending" ? 2000 : false,
+  })
 
   const cancel = useMutation({
     mutationFn: () => cancelFunding(fundingId),
@@ -88,6 +113,47 @@ function FundingPage() {
             title={funding.projectFullName}
             description={`This payment is ${statusSentence(funding.status)}`}
           />
+
+          {session_id && funding.status === "pending" ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className={cn(
+                panel,
+                "mt-6 flex items-center gap-3 border-foreground/30 bg-muted/40 py-4 text-sm font-medium text-foreground"
+              )}
+            >
+              <Loader2
+                size={18}
+                className="shrink-0 animate-spin text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span>
+                Payment received by Stripe. Synchronizing your project&apos;s
+                balance...
+              </span>
+            </div>
+          ) : null}
+
+          {cancelled ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className={cn(
+                panel,
+                "mt-6 flex items-center gap-3 border-foreground/30 bg-muted/40 py-4 text-sm font-medium text-foreground"
+              )}
+            >
+              <Info
+                size={18}
+                className="shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span>
+                Payment checkout was cancelled. You can try again at any time.
+              </span>
+            </div>
+          ) : null}
 
           <div className="mt-8 grid items-start gap-3 lg:grid-cols-[1.4fr_1fr]">
             <section className={cn(panel, "mt-0")}>
@@ -149,13 +215,24 @@ function FundingPage() {
                     The balance changes only after the payment completes. This
                     build uses a test checkout, so no card is charged.
                   </p>
-                  <Link
-                    to="/mock-checkout/$fundingId"
-                    params={{ fundingId: funding.id }}
-                    className={cn(buttonPrimary, "mt-5 w-full")}
-                  >
-                    Complete test payment
-                  </Link>
+                  {funding.checkoutUrl && isSafeCheckoutUrl(funding.checkoutUrl) ? (
+                    <a
+                      href={funding.checkoutUrl}
+                      className={cn(buttonPrimary, "mt-5 w-full")}
+                    >
+                      {funding.checkoutUrl.startsWith("https://checkout.stripe.com/")
+                        ? "Continue to payment"
+                        : "Complete test payment"}
+                    </a>
+                  ) : (
+                    <Link
+                      to="/mock-checkout/$fundingId"
+                      params={{ fundingId: funding.id }}
+                      className={cn(buttonPrimary, "mt-5 w-full")}
+                    >
+                      Complete test payment
+                    </Link>
+                  )}
                   <button
                     type="button"
                     onClick={() => cancel.mutate()}
