@@ -239,6 +239,26 @@ fun InlineLoader(label: String, modifier: Modifier = Modifier) {
     }
 }
 
+/** A single-line spinner for a section that should not push the page around. */
+@Composable
+fun CompactLoader(label: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CircularProgressIndicator(
+            modifier = Modifier.size(16.dp),
+            strokeWidth = 2.dp,
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 @Composable
 fun FullScreenLoader(label: String) {
     Column(

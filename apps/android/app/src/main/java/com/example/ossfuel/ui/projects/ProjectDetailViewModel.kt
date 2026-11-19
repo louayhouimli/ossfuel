@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.ossfuel.data.AiUsage
 import com.example.ossfuel.data.ApiException
+import com.example.ossfuel.data.ApiKeySummary
 import com.example.ossfuel.data.Balance
 import com.example.ossfuel.data.BalanceTransaction
+import com.example.ossfuel.data.CreateApiKeyResponse
 import com.example.ossfuel.data.Project
 import com.example.ossfuel.data.ProjectRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -60,6 +62,23 @@ sealed interface AiUsageUiState {
     data class Error(val message: String) : AiUsageUiState
 }
 
+/**
+ * The maintainer-only API key manager. Keys, the creation form, and the
+ * one-time raw key share one state so a failed refresh never discards the
+ * name being typed or the key that still needs to be copied.
+ */
+data class ApiKeysUiState(
+    val keys: List<ApiKeySummary> = emptyList(),
+    val isLoading: Boolean = true,
+    val loadError: String? = null,
+    val draftName: String = "",
+    val isCreating: Boolean = false,
+    val createError: String? = null,
+    val createdKey: CreateApiKeyResponse? = null,
+    val revokingKeyId: String? = null,
+    val revokeError: String? = null,
+)
+
 class ProjectDetailViewModel(
     private val repository: ProjectRepository,
     private val projectId: String,
@@ -76,7 +95,11 @@ class ProjectDetailViewModel(
     private val _aiUsage = MutableStateFlow<AiUsageUiState>(AiUsageUiState.Loading)
     val aiUsage: StateFlow<AiUsageUiState> = _aiUsage.asStateFlow()
 
+    private val _apiKeys = MutableStateFlow(ApiKeysUiState())
+    val apiKeys: StateFlow<ApiKeysUiState> = _apiKeys.asStateFlow()
+
     private var historyPage = 1
+    private var apiKeysRequested = false
 
     init {
         load()
@@ -114,6 +137,96 @@ class ProjectDetailViewModel(
         }
 
         loadHistory(current.page + 1, showLoading = false)
+    }
+
+    /**
+     * The key manager only renders for the maintainer, so it asks for the list
+     * when the section first appears instead of loading it for every viewer
+     * (the endpoint is owner-only and would answer 403).
+     */
+    fun loadApiKeys() {
+        if (apiKeysRequested) {
+            return
+        }
+
+        apiKeysRequested = true
+        fetchApiKeys()
+    }
+
+    fun retryApiKeys() {
+        apiKeysRequested = true
+        fetchApiKeys()
+    }
+
+    fun setApiKeyName(name: String) {
+        _apiKeys.value = _apiKeys.value.copy(
+            draftName = name.take(MAX_API_KEY_NAME_LENGTH),
+            createError = null,
+        )
+    }
+
+    fun createApiKey() {
+        val current = _apiKeys.value
+        val name = current.draftName.trim()
+
+        if (name.isEmpty() || current.isCreating) {
+            return
+        }
+
+        _apiKeys.value = current.copy(isCreating = true, createError = null)
+
+        viewModelScope.launch {
+            try {
+                val created = repository.createApiKey(projectId, name)
+                val latest = _apiKeys.value
+
+                _apiKeys.value = latest.copy(
+                    keys = listOf(created.toSummary()) + latest.keys,
+                    isLoading = false,
+                    isCreating = false,
+                    createdKey = created,
+                    draftName = "",
+                )
+            } catch (exception: ApiException) {
+                _apiKeys.value = _apiKeys.value.copy(
+                    isCreating = false,
+                    createError = exception.message ?: API_KEYS_ERROR,
+                )
+            }
+        }
+    }
+
+    fun dismissCreatedApiKey() {
+        _apiKeys.value = _apiKeys.value.copy(createdKey = null)
+    }
+
+    fun revokeApiKey(keyId: String) {
+        val current = _apiKeys.value
+
+        if (current.revokingKeyId != null) {
+            return
+        }
+
+        _apiKeys.value = current.copy(revokingKeyId = keyId, revokeError = null)
+
+        viewModelScope.launch {
+            try {
+                repository.revokeApiKey(projectId, keyId)
+                val latest = _apiKeys.value
+
+                _apiKeys.value = latest.copy(
+                    keys = latest.keys.map { key ->
+                        if (key.id == keyId) key.copy(isActive = false) else key
+                    },
+                    revokingKeyId = null,
+                )
+            } catch (exception: ApiException) {
+                _apiKeys.value = _apiKeys.value.copy(
+                    revokingKeyId = null,
+                    revokeError = exception.message ?: API_KEYS_ERROR,
+                )
+            }
+        }
     }
 
     fun refresh() {
@@ -256,6 +369,27 @@ class ProjectDetailViewModel(
         }
     }
 
+    private fun fetchApiKeys() {
+        _apiKeys.value = _apiKeys.value.copy(isLoading = true, loadError = null)
+
+        viewModelScope.launch {
+            try {
+                val keys = repository.apiKeys(projectId)
+
+                _apiKeys.value = _apiKeys.value.copy(
+                    keys = keys,
+                    isLoading = false,
+                    loadError = null,
+                )
+            } catch (exception: ApiException) {
+                _apiKeys.value = _apiKeys.value.copy(
+                    isLoading = false,
+                    loadError = exception.message ?: API_KEYS_ERROR,
+                )
+            }
+        }
+    }
+
     class Factory(
         private val repository: ProjectRepository,
         private val projectId: String,
@@ -273,6 +407,17 @@ class ProjectDetailViewModel(
     private companion object {
         const val DEFAULT_ERROR = "Something went wrong. Try again."
         const val INSIGHTS_ERROR = "Something went wrong. Try again."
+        const val API_KEYS_ERROR = "Something went wrong. Try again."
         const val HISTORY_PAGE_SIZE = 10
+        const val MAX_API_KEY_NAME_LENGTH = 100
     }
 }
+
+private fun CreateApiKeyResponse.toSummary() = ApiKeySummary(
+    id = id,
+    projectId = projectId,
+    name = name,
+    keyPrefix = keyPrefix,
+    isActive = true,
+    createdAt = createdAt,
+)

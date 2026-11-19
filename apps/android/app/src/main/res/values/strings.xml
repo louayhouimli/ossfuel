@@ -80,6 +80,33 @@
     <string name="audit_empty">No AI requests logged yet. Requests made using project API keys will appear here.</string>
     <string name="audit_tokens">%1$s prompt · %2$s completion</string>
 
+    <!-- API keys -->
+    <string name="api_keys_eyebrow">Developer Integration</string>
+    <string name="api_keys_title">Project API Keys</string>
+    <string name="api_keys_description">Generate project keys for coding tools like Aider, OpenCode, and Continue to consume this project\'s AI balance via the OpenAI-compatible gateway.</string>
+    <string name="api_keys_loading">Loading API keys…</string>
+    <string name="api_keys_error">The API keys could not be loaded. Try again shortly.</string>
+    <string name="api_keys_empty">No API keys created yet. Generate one above to use with your AI coding assistant.</string>
+    <string name="api_keys_name_placeholder">Key name (e.g., Aider CLI on MacBook)</string>
+    <string name="api_keys_create">Generate key</string>
+    <string name="api_keys_creating">Creating…</string>
+    <string name="api_keys_new_title">Save your key now — you won\'t be able to see it again!</string>
+    <string name="api_keys_copy">Copy</string>
+    <string name="api_keys_copied">Copied</string>
+    <string name="api_keys_done">Done</string>
+    <string name="api_keys_usage_hint">Use with Aider / OpenCode:</string>
+    <string name="api_keys_env_hint">OPENAI_API_BASE=%1$s\nOPENAI_API_KEY=%2$s</string>
+    <string name="api_keys_active">Active</string>
+    <string name="api_keys_revoked">Revoked</string>
+    <string name="api_keys_created">Created %1$s</string>
+    <string name="api_keys_last_used">Last used %1$s</string>
+    <string name="api_keys_never_used">Never used</string>
+    <string name="api_keys_revoking">Revoking…</string>
+    <string name="api_keys_revoke_title">Revoke this API key?</string>
+    <string name="api_keys_revoke_description">%1$s will stop working immediately. Any tool using it will lose access to this project\'s AI balance.</string>
+    <string name="action_revoke">Revoke</string>
+    <string name="action_cancel">Cancel</string>
+
     <!-- Import -->
     <string name="import_eyebrow">Register a project</string>
     <string name="import_title">Import a repository</string>

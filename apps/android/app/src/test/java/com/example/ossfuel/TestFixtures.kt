@@ -2,10 +2,12 @@ package com.example.ossfuel
 
 import com.example.ossfuel.data.AiUsage
 import com.example.ossfuel.data.ApiException
+import com.example.ossfuel.data.ApiKeySummary
 import com.example.ossfuel.data.AvailableRepository
 import com.example.ossfuel.data.Balance
 import com.example.ossfuel.data.BalanceTransaction
 import com.example.ossfuel.data.BalanceTransactionList
+import com.example.ossfuel.data.CreateApiKeyResponse
 import com.example.ossfuel.data.Project
 import com.example.ossfuel.data.ProjectList
 import com.example.ossfuel.data.ProjectRepository
@@ -115,6 +117,41 @@ fun sampleAiUsage(
     createdAt = createdAt,
 )
 
+fun sampleApiKey(
+    id: String = "key-1",
+    projectId: String = "project-1",
+    name: String = "Aider CLI",
+    keyPrefix: String = "ossf_live_abc",
+    isActive: Boolean = true,
+    createdAt: String = "2026-02-01T12:00:00Z",
+    lastUsedAt: String? = null,
+) = ApiKeySummary(
+    id = id,
+    projectId = projectId,
+    name = name,
+    keyPrefix = keyPrefix,
+    isActive = isActive,
+    createdAt = createdAt,
+    lastUsedAt = lastUsedAt,
+    revokedAt = if (isActive) null else createdAt,
+)
+
+fun sampleCreatedApiKey(
+    id: String = "key-1",
+    projectId: String = "project-1",
+    name: String = "Aider CLI",
+    rawKey: String = "ossf_live_abcdef123456",
+    keyPrefix: String = "ossf_live_abc",
+    createdAt: String = "2026-02-01T12:00:00Z",
+) = CreateApiKeyResponse(
+    id = id,
+    projectId = projectId,
+    name = name,
+    rawKey = rawKey,
+    keyPrefix = keyPrefix,
+    createdAt = createdAt,
+)
+
 /**
  * An in-memory [ProjectRepository] whose results and failures are settable per
  * test. It records calls so paging and import behaviour can be asserted.
@@ -130,6 +167,8 @@ class FakeProjectRepository : ProjectRepository {
     var transactions: List<BalanceTransaction> = listOf(sampleTransaction())
     var historyTotalCount: Int = 1
     var aiUsage: List<AiUsage> = listOf(sampleAiUsage())
+    var apiKeys: List<ApiKeySummary> = listOf(sampleApiKey())
+    var createdApiKey: CreateApiKeyResponse = sampleCreatedApiKey()
 
     var listError: ApiException? = null
     var getError: ApiException? = null
@@ -140,6 +179,9 @@ class FakeProjectRepository : ProjectRepository {
     var balanceError: ApiException? = null
     var historyError: ApiException? = null
     var aiUsageError: ApiException? = null
+    var apiKeysError: ApiException? = null
+    var createApiKeyError: ApiException? = null
+    var revokeApiKeyError: ApiException? = null
 
     val listedPages = mutableListOf<Int>()
     val refreshedIds = mutableListOf<String>()
@@ -148,6 +190,9 @@ class FakeProjectRepository : ProjectRepository {
     val requestedBalanceIds = mutableListOf<String>()
     val historyRequests = mutableListOf<Pair<Int, Int>>()
     val requestedUsageIds = mutableListOf<String>()
+    val requestedApiKeyProjectIds = mutableListOf<String>()
+    val createdApiKeyRequests = mutableListOf<Pair<String, String>>()
+    val revokedApiKeyRequests = mutableListOf<Pair<String, String>>()
 
     override suspend fun list(page: Int, pageSize: Int): ProjectList {
         listError?.let { throw it }
@@ -229,5 +274,30 @@ class FakeProjectRepository : ProjectRepository {
         requestedUsageIds += projectId
 
         return aiUsage
+    }
+
+    override suspend fun apiKeys(projectId: String): List<ApiKeySummary> {
+        apiKeysError?.let { throw it }
+
+        requestedApiKeyProjectIds += projectId
+
+        return apiKeys
+    }
+
+    override suspend fun createApiKey(
+        projectId: String,
+        name: String,
+    ): CreateApiKeyResponse {
+        createApiKeyError?.let { throw it }
+
+        createdApiKeyRequests += projectId to name
+
+        return createdApiKey
+    }
+
+    override suspend fun revokeApiKey(projectId: String, keyId: String) {
+        revokeApiKeyError?.let { throw it }
+
+        revokedApiKeyRequests += projectId to keyId
     }
 }

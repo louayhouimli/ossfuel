@@ -2,8 +2,10 @@ package com.example.ossfuel
 
 import com.example.ossfuel.data.AiUsage
 import com.example.ossfuel.data.ApiClient
+import com.example.ossfuel.data.ApiKeySummary
 import com.example.ossfuel.data.AvailableRepository
 import com.example.ossfuel.data.BalanceTransactionList
+import com.example.ossfuel.data.CreateApiKeyResponse
 import com.example.ossfuel.data.Project
 import com.example.ossfuel.data.ProjectList
 import kotlinx.serialization.builtins.ListSerializer
@@ -204,5 +206,62 @@ class ProjectModelsTest {
         assertEquals("gpt-4o-mini", usages.first().model)
         assertEquals(1801, usages.first().totalTokens)
         assertEquals(42L, usages.first().costMinor)
+    }
+
+    @Test
+    fun apiKeysDecodeTheManagerSummary() {
+        val keys = json.decodeFromString(
+            ListSerializer(ApiKeySummary.serializer()),
+            """
+            [
+              {
+                "id": "key-1",
+                "projectId": "project-1",
+                "name": "Aider CLI",
+                "keyPrefix": "ossf_live_abc",
+                "isActive": true,
+                "createdAt": "2026-02-01T12:00:00+00:00",
+                "lastUsedAt": "2026-02-02T12:00:00+00:00",
+                "revokedAt": null
+              },
+              {
+                "id": "key-2",
+                "projectId": "project-1",
+                "name": "Old key",
+                "keyPrefix": "ossf_live_def",
+                "isActive": false,
+                "createdAt": "2026-01-01T12:00:00+00:00",
+                "lastUsedAt": null,
+                "revokedAt": "2026-01-02T12:00:00+00:00"
+              }
+            ]
+            """.trimIndent(),
+        )
+
+        assertEquals(2, keys.size)
+        assertEquals("ossf_live_abc", keys.first().keyPrefix)
+        assertEquals(true, keys.first().isActive)
+        assertEquals(null, keys[1].lastUsedAt)
+        assertEquals(false, keys[1].isActive)
+    }
+
+    @Test
+    fun createApiKeyResponseCarriesTheRawKey() {
+        val created = json.decodeFromString(
+            CreateApiKeyResponse.serializer(),
+            """
+            {
+              "id": "key-1",
+              "projectId": "project-1",
+              "name": "Aider CLI",
+              "rawKey": "ossf_live_abcdef123456",
+              "keyPrefix": "ossf_live_abc",
+              "createdAt": "2026-02-01T12:00:00+00:00"
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("ossf_live_abcdef123456", created.rawKey)
+        assertEquals("Aider CLI", created.name)
     }
 }

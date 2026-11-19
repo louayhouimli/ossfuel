@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -60,6 +61,7 @@ fun OutlineAction(
     enabled: Boolean = true,
     icon: ImageVector? = null,
     compact: Boolean = false,
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     OutlinedButton(
         onClick = onClick,
@@ -68,8 +70,8 @@ fun OutlineAction(
         shape = MaterialTheme.shapes.small,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = MaterialTheme.colorScheme.onSurface,
-            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            contentColor = contentColor,
+            disabledContentColor = contentColor.copy(alpha = 0.4f),
         ),
     ) {
         if (icon != null) {

@@ -25,6 +25,12 @@ interface ProjectRepository {
     ): BalanceTransactionList
 
     suspend fun aiUsage(projectId: String): List<AiUsage>
+
+    suspend fun apiKeys(projectId: String): List<ApiKeySummary>
+
+    suspend fun createApiKey(projectId: String, name: String): CreateApiKeyResponse
+
+    suspend fun revokeApiKey(projectId: String, keyId: String)
 }
 
 class NetworkProjectRepository(private val api: ApiClient) : ProjectRepository {
@@ -77,6 +83,32 @@ class NetworkProjectRepository(private val api: ApiClient) : ProjectRepository {
             "$PROJECTS_PATH/$projectId/ai-usage",
             ListSerializer(AiUsage.serializer()),
         )
+
+    override suspend fun apiKeys(projectId: String): List<ApiKeySummary> =
+        api.get(
+            "$PROJECTS_PATH/$projectId/api-keys",
+            ListSerializer(ApiKeySummary.serializer()),
+        )
+
+    override suspend fun createApiKey(
+        projectId: String,
+        name: String,
+    ): CreateApiKeyResponse {
+        val body = api.json.encodeToString(
+            CreateApiKeyRequest.serializer(),
+            CreateApiKeyRequest(name),
+        )
+
+        return api.post(
+            "$PROJECTS_PATH/$projectId/api-keys",
+            body,
+            CreateApiKeyResponse.serializer(),
+        )
+    }
+
+    override suspend fun revokeApiKey(projectId: String, keyId: String) {
+        api.delete("$PROJECTS_PATH/$projectId/api-keys/$keyId")
+    }
 
     private companion object {
         const val PROJECTS_PATH = "/api/v1/projects"

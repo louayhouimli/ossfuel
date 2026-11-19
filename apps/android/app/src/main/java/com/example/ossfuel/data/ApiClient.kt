@@ -13,12 +13,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
-/**
- * The single HTTP boundary. It attaches the bearer token, tags requests as
- * coming from Android, and turns problem responses into [ApiException]s.
- *
- * Endpoint paths live in the repositories so this class stays a transport.
- */
 class ApiClient(
     private val baseUrl: String,
     private val tokenProvider: () -> String?,

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Memory
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ossfuel.R
 import com.example.ossfuel.data.AiUsage
 import com.example.ossfuel.data.BalanceTransaction
+import com.example.ossfuel.ui.components.CompactLoader
 import com.example.ossfuel.ui.components.Eyebrow
 import com.example.ossfuel.ui.components.OutlineAction
 import com.example.ossfuel.ui.components.Pagination
@@ -59,7 +59,7 @@ fun BalanceSection(
         Eyebrow(text = stringResource(R.string.balance_eyebrow))
 
         when (balanceState) {
-            BalanceUiState.Loading -> SectionLoader(
+            BalanceUiState.Loading -> CompactLoader(
                 label = stringResource(R.string.balance_loading),
                 modifier = Modifier.padding(top = 16.dp),
             )
@@ -119,7 +119,7 @@ private fun FundingHistory(
     onNextPage: () -> Unit,
 ) {
     when (state) {
-        FundingHistoryUiState.Loading -> SectionLoader(
+        FundingHistoryUiState.Loading -> CompactLoader(
             label = stringResource(R.string.balance_history_loading),
             modifier = Modifier.padding(top = 16.dp),
         )
@@ -243,7 +243,7 @@ fun AiUsageAuditSection(
         )
 
         when (state) {
-            AiUsageUiState.Loading -> SectionLoader(
+            AiUsageUiState.Loading -> CompactLoader(
                 label = stringResource(R.string.audit_loading),
                 modifier = Modifier.padding(top = 20.dp),
             )
@@ -373,25 +373,6 @@ private fun EmptyAuditState(modifier: Modifier = Modifier) {
                 textAlign = TextAlign.Center,
             )
         }
-    }
-}
-
-@Composable
-private fun SectionLoader(label: String, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(16.dp),
-            strokeWidth = 2.dp,
-        )
-        Spacer(Modifier.width(10.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

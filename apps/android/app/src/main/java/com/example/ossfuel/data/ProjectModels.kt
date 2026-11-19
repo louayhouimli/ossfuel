@@ -113,3 +113,30 @@ data class AiUsage(
     val status: String,
     val createdAt: String,
 )
+
+@Serializable
+data class ApiKeySummary(
+    val id: String,
+    val projectId: String,
+    val name: String,
+    val keyPrefix: String,
+    val isActive: Boolean,
+    val createdAt: String,
+    val lastUsedAt: String? = null,
+    val revokedAt: String? = null,
+)
+
+@Serializable
+data class CreateApiKeyRequest(
+    val name: String,
+)
+
+@Serializable
+data class CreateApiKeyResponse(
+    val id: String,
+    val projectId: String,
+    val name: String,
+    val rawKey: String,
+    val keyPrefix: String,
+    val createdAt: String,
+)

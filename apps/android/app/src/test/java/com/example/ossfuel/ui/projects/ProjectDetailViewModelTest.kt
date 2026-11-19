@@ -3,7 +3,9 @@ package com.example.ossfuel.ui.projects
 import com.example.ossfuel.FakeProjectRepository
 import com.example.ossfuel.data.ApiException
 import com.example.ossfuel.sampleAiUsage
+import com.example.ossfuel.sampleApiKey
 import com.example.ossfuel.sampleBalance
+import com.example.ossfuel.sampleCreatedApiKey
 import com.example.ossfuel.sampleProject
 import com.example.ossfuel.sampleTransaction
 import kotlinx.coroutines.Dispatchers
@@ -274,5 +276,166 @@ class ProjectDetailViewModelTest {
         assertTrue(viewModel.balance.value is BalanceUiState.Content)
         assertTrue(viewModel.history.value is FundingHistoryUiState.Content)
         assertTrue(viewModel.aiUsage.value is AiUsageUiState.Content)
+    }
+
+    @Test
+    fun apiKeysWaitForTheManagerToOpen() = runTest {
+        val repository = FakeProjectRepository().apply {
+            apiKeys = listOf(sampleApiKey())
+        }
+
+        val viewModel = ProjectDetailViewModel(repository, "project-1")
+
+        assertTrue(viewModel.apiKeys.value.isLoading)
+        assertTrue(repository.requestedApiKeyProjectIds.isEmpty())
+
+        viewModel.loadApiKeys()
+
+        val state = viewModel.apiKeys.value
+        assertEquals(1, state.keys.size)
+        assertEquals(false, state.isLoading)
+        assertEquals(listOf("project-1"), repository.requestedApiKeyProjectIds)
+
+        viewModel.loadApiKeys()
+        assertEquals(1, repository.requestedApiKeyProjectIds.size)
+    }
+
+    @Test
+    fun aFailedApiKeyLoadCanBeRetried() = runTest {
+        val repository = FakeProjectRepository().apply {
+            apiKeysError = ApiException(500, "Keys unavailable.")
+        }
+
+        val viewModel = ProjectDetailViewModel(repository, "project-1")
+        viewModel.loadApiKeys()
+
+        assertEquals("Keys unavailable.", viewModel.apiKeys.value.loadError)
+
+        repository.apiKeysError = null
+        viewModel.retryApiKeys()
+
+        assertEquals(null, viewModel.apiKeys.value.loadError)
+        assertEquals(1, viewModel.apiKeys.value.keys.size)
+    }
+
+    @Test
+    fun creatingAKeyKeepsTheRawKeyAndPrependsIt() = runTest {
+        val repository = FakeProjectRepository().apply {
+            apiKeys = listOf(sampleApiKey(id = "key-old", name = "Old key"))
+            createdApiKey = sampleCreatedApiKey(
+                id = "key-new",
+                name = "New key",
+                rawKey = "ossf_live_xyz",
+            )
+        }
+
+        val viewModel = ProjectDetailViewModel(repository, "project-1")
+        viewModel.loadApiKeys()
+        viewModel.setApiKeyName("New key")
+        viewModel.createApiKey()
+
+        val state = viewModel.apiKeys.value
+        assertEquals("ossf_live_xyz", state.createdKey?.rawKey)
+        assertEquals("", state.draftName)
+        assertEquals(listOf("key-new", "key-old"), state.keys.map { it.id })
+        assertEquals(listOf("project-1" to "New key"), repository.createdApiKeyRequests)
+    }
+
+    @Test
+    fun blankKeyNamesAreIgnored() = runTest {
+        val repository = FakeProjectRepository()
+
+        val viewModel = ProjectDetailViewModel(repository, "project-1")
+        viewModel.setApiKeyName("   ")
+        viewModel.createApiKey()
+
+        assertTrue(repository.createdApiKeyRequests.isEmpty())
+        assertEquals("   ", viewModel.apiKeys.value.draftName)
+    }
+
+    @Test
+    fun keyNamesAreTrimmedAndLimited() = runTest {
+        val repository = FakeProjectRepository()
+
+        val viewModel = ProjectDetailViewModel(repository, "project-1")
+        viewModel.setApiKeyName("x".repeat(150))
+
+        assertEquals(100, viewModel.apiKeys.value.draftName.length)
+
+        viewModel.setApiKeyName("  Aider CLI  ")
+        viewModel.createApiKey()
+
+        assertEquals(
+            listOf("project-1" to "Aider CLI"),
+            repository.createdApiKeyRequests,
+        )
+    }
+
+    @Test
+    fun aFailedCreateKeepsTheDraft() = runTest {
+        val repository = FakeProjectRepository().apply {
+            createApiKeyError = ApiException(400, "Name is invalid.")
+        }
+
+        val viewModel = ProjectDetailViewModel(repository, "project-1")
+        viewModel.loadApiKeys()
+        viewModel.setApiKeyName("Aider CLI")
+        viewModel.createApiKey()
+
+        val state = viewModel.apiKeys.value
+        assertEquals("Aider CLI", state.draftName)
+        assertEquals("Name is invalid.", state.createError)
+        assertEquals(null, state.createdKey)
+        assertEquals(false, state.isCreating)
+    }
+
+    @Test
+    fun dismissingTheCreatedKeyClearsIt() = runTest {
+        val repository = FakeProjectRepository()
+
+        val viewModel = ProjectDetailViewModel(repository, "project-1")
+        viewModel.loadApiKeys()
+        viewModel.setApiKeyName("Aider CLI")
+        viewModel.createApiKey()
+        viewModel.dismissCreatedApiKey()
+
+        assertEquals(null, viewModel.apiKeys.value.createdKey)
+    }
+
+    @Test
+    fun revokingMarksOnlyThatKeyInactive() = runTest {
+        val repository = FakeProjectRepository().apply {
+            apiKeys = listOf(
+                sampleApiKey(id = "key-1", isActive = true),
+                sampleApiKey(id = "key-2", name = "Other", isActive = true),
+            )
+        }
+
+        val viewModel = ProjectDetailViewModel(repository, "project-1")
+        viewModel.loadApiKeys()
+        viewModel.revokeApiKey("key-1")
+
+        val state = viewModel.apiKeys.value
+        assertEquals(false, state.keys.first { it.id == "key-1" }.isActive)
+        assertEquals(true, state.keys.first { it.id == "key-2" }.isActive)
+        assertEquals(null, state.revokingKeyId)
+        assertEquals(listOf("project-1" to "key-1"), repository.revokedApiKeyRequests)
+    }
+
+    @Test
+    fun aFailedRevokeKeepsTheKeyActive() = runTest {
+        val repository = FakeProjectRepository().apply {
+            apiKeys = listOf(sampleApiKey(id = "key-1", isActive = true))
+            revokeApiKeyError = ApiException(500, "Could not revoke.")
+        }
+
+        val viewModel = ProjectDetailViewModel(repository, "project-1")
+        viewModel.loadApiKeys()
+        viewModel.revokeApiKey("key-1")
+
+        val state = viewModel.apiKeys.value
+        assertEquals(true, state.keys.single().isActive)
+        assertEquals("Could not revoke.", state.revokeError)
+        assertEquals(null, state.revokingKeyId)
     }
 }

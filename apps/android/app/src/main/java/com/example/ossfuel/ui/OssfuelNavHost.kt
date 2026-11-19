@@ -113,6 +113,7 @@ fun OssfuelNavHost(
                 val balanceState by viewModel.balance.collectAsStateWithLifecycle()
                 val historyState by viewModel.history.collectAsStateWithLifecycle()
                 val aiUsageState by viewModel.aiUsage.collectAsStateWithLifecycle()
+                val apiKeysState by viewModel.apiKeys.collectAsStateWithLifecycle()
 
                 ProjectDetailScreen(
                     state = state,
@@ -120,6 +121,7 @@ fun OssfuelNavHost(
                     balanceState = balanceState,
                     historyState = historyState,
                     aiUsageState = aiUsageState,
+                    apiKeysState = apiKeysState,
                     onBack = { navController.popBackStack() },
                     onRetry = viewModel::retry,
                     onRefresh = viewModel::refresh,
@@ -130,6 +132,12 @@ fun OssfuelNavHost(
                     onPreviousHistoryPage = viewModel::previousHistoryPage,
                     onNextHistoryPage = viewModel::nextHistoryPage,
                     onRetryAiUsage = viewModel::retryAiUsage,
+                    onLoadApiKeys = viewModel::loadApiKeys,
+                    onApiKeyNameChange = viewModel::setApiKeyName,
+                    onCreateApiKey = viewModel::createApiKey,
+                    onDismissCreatedApiKey = viewModel::dismissCreatedApiKey,
+                    onRevokeApiKey = viewModel::revokeApiKey,
+                    onRetryApiKeys = viewModel::retryApiKeys,
                 )
             }
 

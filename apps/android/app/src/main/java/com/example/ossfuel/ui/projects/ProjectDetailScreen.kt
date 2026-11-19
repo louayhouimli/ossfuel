@@ -43,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import com.example.ossfuel.BuildConfig
 import com.example.ossfuel.R
 import com.example.ossfuel.data.Project
 import com.example.ossfuel.ui.components.BackIconButton
@@ -68,6 +69,7 @@ fun ProjectDetailScreen(
     balanceState: BalanceUiState,
     historyState: FundingHistoryUiState,
     aiUsageState: AiUsageUiState,
+    apiKeysState: ApiKeysUiState,
     onBack: () -> Unit,
     onRetry: () -> Unit,
     onRefresh: () -> Unit,
@@ -78,6 +80,12 @@ fun ProjectDetailScreen(
     onPreviousHistoryPage: () -> Unit,
     onNextHistoryPage: () -> Unit,
     onRetryAiUsage: () -> Unit,
+    onLoadApiKeys: () -> Unit,
+    onApiKeyNameChange: (String) -> Unit,
+    onCreateApiKey: () -> Unit,
+    onDismissCreatedApiKey: () -> Unit,
+    onRevokeApiKey: (String) -> Unit,
+    onRetryApiKeys: () -> Unit,
 ) {
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -146,6 +154,7 @@ fun ProjectDetailScreen(
                         balanceState = balanceState,
                         historyState = historyState,
                         aiUsageState = aiUsageState,
+                        apiKeysState = apiKeysState,
                         onRefresh = onRefresh,
                         onDelete = onDelete,
                         onRetryBalance = onRetryBalance,
@@ -153,6 +162,12 @@ fun ProjectDetailScreen(
                         onPreviousHistoryPage = onPreviousHistoryPage,
                         onNextHistoryPage = onNextHistoryPage,
                         onRetryAiUsage = onRetryAiUsage,
+                        onLoadApiKeys = onLoadApiKeys,
+                        onApiKeyNameChange = onApiKeyNameChange,
+                        onCreateApiKey = onCreateApiKey,
+                        onDismissCreatedApiKey = onDismissCreatedApiKey,
+                        onRevokeApiKey = onRevokeApiKey,
+                        onRetryApiKeys = onRetryApiKeys,
                     )
                 }
             }
@@ -189,6 +204,7 @@ private fun ProjectRecord(
     balanceState: BalanceUiState,
     historyState: FundingHistoryUiState,
     aiUsageState: AiUsageUiState,
+    apiKeysState: ApiKeysUiState,
     onRefresh: () -> Unit,
     onDelete: () -> Unit,
     onRetryBalance: () -> Unit,
@@ -196,6 +212,12 @@ private fun ProjectRecord(
     onPreviousHistoryPage: () -> Unit,
     onNextHistoryPage: () -> Unit,
     onRetryAiUsage: () -> Unit,
+    onLoadApiKeys: () -> Unit,
+    onApiKeyNameChange: (String) -> Unit,
+    onCreateApiKey: () -> Unit,
+    onDismissCreatedApiKey: () -> Unit,
+    onRevokeApiKey: (String) -> Unit,
+    onRetryApiKeys: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
 
@@ -331,8 +353,15 @@ private fun ProjectRecord(
                 isRefreshing = isRefreshing,
                 isDeleting = isDeleting,
                 actionError = actionError,
+                apiKeysState = apiKeysState,
                 onRefresh = onRefresh,
                 onDelete = onDelete,
+                onLoadApiKeys = onLoadApiKeys,
+                onApiKeyNameChange = onApiKeyNameChange,
+                onCreateApiKey = onCreateApiKey,
+                onDismissCreatedApiKey = onDismissCreatedApiKey,
+                onRevokeApiKey = onRevokeApiKey,
+                onRetryApiKeys = onRetryApiKeys,
             )
         }
     }
@@ -377,8 +406,15 @@ private fun MaintainerSection(
     isRefreshing: Boolean,
     isDeleting: Boolean,
     actionError: String?,
+    apiKeysState: ApiKeysUiState,
     onRefresh: () -> Unit,
     onDelete: () -> Unit,
+    onLoadApiKeys: () -> Unit,
+    onApiKeyNameChange: (String) -> Unit,
+    onCreateApiKey: () -> Unit,
+    onDismissCreatedApiKey: () -> Unit,
+    onRevokeApiKey: (String) -> Unit,
+    onRetryApiKeys: () -> Unit,
 ) {
     var confirmingDelete by remember { mutableStateOf(false) }
 
@@ -397,6 +433,17 @@ private fun MaintainerSection(
             modifier = Modifier.padding(top = 10.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        ApiKeysManager(
+            state = apiKeysState,
+            gatewayBaseUrl = BuildConfig.API_BASE_URL.trimEnd('/') + "/v1",
+            onLoad = onLoadApiKeys,
+            onNameChange = onApiKeyNameChange,
+            onCreate = onCreateApiKey,
+            onDismissCreatedKey = onDismissCreatedApiKey,
+            onRevoke = onRevokeApiKey,
+            onRetry = onRetryApiKeys,
         )
 
         FlowRow(
